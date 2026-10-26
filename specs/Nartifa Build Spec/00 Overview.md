@@ -18,6 +18,7 @@ The design spec says what each page looks like and how it behaves. This spec say
 | 07 Admin.md | Stock Payload vs custom, each admin screen |
 | 08 Caching & Ops.md | Caching, analytics, fonts, social previews, logs |
 | 09 Build Order.md | Phases, what to verify early, open items |
+| ../NARTIFA Build Checklist.md | The same phases as tick boxes, for tracking progress |
 
 ## Status labels
 
