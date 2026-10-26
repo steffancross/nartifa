@@ -38,10 +38,12 @@ Updated 2026-10-25. Visual details live in *Design Spec/*. Build details live in
 **Globe**
 - **Plain pin dots** for now; the artist's custom pin image later. Grouping later. Tap → **near full-screen photo**.
 - Location: **typed city** only (may get more precise later). City list from GeoNames.
-- Photo location data is used **only to suggest the city**. The exact location is never sent, kept or shown.
+- Photo location data is **not read or used** (decided 2026-10-25: iPhones strip it from web uploads, so a "suggested from your photo" feature would rarely work). The server keeps only a re-encoded copy with no metadata.
+- City list: GeoNames places over 1,000 people, with Japanese names. Suggestions show region and country so same-named places can be told apart.
 - Upload limits: one photo, JPG/PNG/WebP, 5 per hour and 20 per day per visitor, uploads pause at 400 waiting. Invisible spam check.
 - Rejected uploads are **kept in a separate Rejected area**, not deleted.
 - Takedown requests go to the artist directly, not through the site.
+- **Before uploads go public:** a consent line above Send (no checkbox) and a `/privacy` page, linked from the form and About. Drafts in EN/JA in design spec 11.
 
 **Tokens**
 - Colors, type, spacing and motion as in *Design Spec/00 Tokens.md*. Fonts are base fonts and may change.
@@ -66,6 +68,9 @@ Updated 2026-10-25. Visual details live in *Design Spec/*. Build details live in
 | Quiz and feeling icons | Artist |
 | Landing image, site-wide share image | Artist |
 | Copy: landing line, quiz questions, reveal line, upload text, About | Artist |
+| Visitor photos: used on this site only, or also elsewhere (exhibitions, Instagram)? Must be settled **before** the first upload | Artist |
+| Privacy page operator line: name/address shown, or "on request" | Artist |
+| Review of the consent line and privacy page drafts (design spec 11) | Artist |
 | "Ask about this work": can the Instagram message be pre-filled? | Steffan (build) |
 | Artwork form: CMS layout or 9c layout | Steffan (after first build) |
 
@@ -76,4 +81,3 @@ Updated 2026-10-25. Visual details live in *Design Spec/*. Build details live in
 - Pin grouping
 - Several matched works instead of one
 - Machine translation of artwork text
-- Legal: photo rights line, privacy page

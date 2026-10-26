@@ -38,11 +38,13 @@ Opens over the globe: bottom sheet on mobile, side panel on desktop.
 Content, top to bottom:
 1. Short explanation of what to share (copy TBD by the artist).
 2. **Photo** — required, one photo. Tap to choose or take a photo. Shows a preview after choosing. JPG, PNG or WebP.
-3. **Place** — required. **Typed city name with suggestions.** Visitor types a city and picks from the list (free text not accepted). City level only for now; more precise locations may come later.
-   - **Suggested from the photo:** if the photo carries location data, the nearest city is filled in automatically with a small note "Suggested from your photo." The visitor can change it. Only the city is ever kept or shown — the exact location never leaves the visitor's phone. Many photos carry no location (phones and the Instagram browser often remove it); then the field is simply empty.
+3. **Place** — required. **Typed city name with suggestions.** Visitor types a city and picks from the list (free text not accepted). City level only for now; more precise locations may come later. Starts empty.
+   - Each suggestion shows the city name, with region and country in `text-2` after it (e.g. "Fuchu — Tokyo, Japan" / "Fuchu — Hiroshima, Japan"), so places with the same name can be told apart (Proposed). Once picked, the place is shown and kept as "City, Country".
+   - The photo's location data is **not read or used** — Decided. (iPhones remove it from web uploads anyway.)
 4. **Comment** — optional, max 140 characters, counter shown near the limit.
 5. Spam check — usually invisible. Leave room under the Send button for a small checkbox that some visitors will see.
-6. **Send** button, disabled until photo and place are filled.
+6. **Consent line**, directly above Send — `small`, `text-2`, with a link to the privacy page. Text and rules in 11 — Decided.
+7. **Send** button, disabled until photo and place are filled.
 
 Before sending, the photo is resized on the visitor's phone (max 2400px) and all hidden photo data is removed.
 
@@ -58,7 +60,7 @@ Before sending, the photo is resized on the visitor's phone (max 2400px) and all
 | Limit | Value | Message |
 | --- | --- | --- |
 | Photos per upload | 1 | — |
-| File type | JPG, PNG, WebP (iPhones convert HEIC automatically) | "Please use JPG or PNG" |
+| File type | JPG, PNG, WebP (iPhones convert HEIC automatically) | "Please use a JPG, PNG or WebP photo" |
 | File size | 5MB after resizing (rarely reached) | Error under the field |
 | Uploads per visitor | 5 per hour, 20 per day | Error line above Send |
 | Waiting for review | If 400 or more are waiting, new uploads pause | "Please try again later" |
@@ -71,10 +73,9 @@ Before sending, the photo is resized on the visitor's phone (max 2400px) and all
 | Device too weak / WebGL off | Simple flat message and the Share button |
 | Photo wrong type / too large | Error under the field in `error` color |
 | Place not found | "Try a nearby city" under the field |
-| Photo has location data | Place pre-filled, "Suggested from your photo" |
 | Sending | Button shows "Sending…" and is disabled |
 | Send failed / limit reached | Error line, form stays filled |
-| New pin after approval | Appears on the globe within about a minute |
+| New pin after approval | Appears the next time the globe is loaded |
 
 ## Credit
 

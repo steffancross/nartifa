@@ -10,20 +10,23 @@ This folder describes the pages, how they look and how they connect. The build s
 | --- | --- |
 | 00 Overview.md | This file — flow, sitemap, conventions |
 | 00 Tokens.md | Colors, type, spacing, motion, breakpoints |
-| 01 Navigation.md | Menu, language toggle, footer |
+| 01 Navigation.md | Menu, language toggle (no footer) |
 | 03 Landing.md | First screen |
 | 04 Quiz.md | Six-step quiz |
 | 05 Artwork Page.md | Reveal + detail states |
-| 06 All Works.md | Collection step, grid, card |
+| 06 All Works.md | Grid, card (collection graphic paused) |
 | 07 Globe.md | Globe, pins, photo view, upload |
 | 08 About.md | About + contact |
 | 09 Admin Artworks.md | Login, artworks table, artwork form |
 | 10 Admin Globe.md | Review queue, submissions table, edit |
+| 11 Privacy.md | Upload consent line, privacy page (drafts in EN/JA) |
 | ../NARTIFA Open Decisions.md | Everything decided and still open |
 
 Page numbers follow the wireframes. There is no 02 — the artwork card now lives in 06.
 
 Each page links its wireframe options by id (e.g. **5a**). The wireframes are in the `NARTIFA Wireframes` project; screenshots are in `images/`.
+
+The screenshots only show the top of each wireframe section (usually the first option). Use the wireframes project for the full set. **Where a wireframe and this text disagree, the text wins.** The wireframes were drawn before the decisions were made.
 
 ## Status labels
 
@@ -57,6 +60,7 @@ Admin is a separate login-only area (`/admin`). It is not linked from the public
 | All works | `/works` |
 | Globe | `/globe` |
 | About | `/about` |
+| Privacy | `/privacy` (not in the menu — linked from the upload form and About; see 11) |
 
 ## Language — Decided
 
@@ -85,4 +89,5 @@ Admin is a separate login-only area (`/admin`). It is not linked from the public
 - Collection graphic before All Works (paused — see 06)
 - Pin grouping on the globe
 - Machine translation of artwork text
-- Legal / privacy copy
+
+(Legal / privacy copy was here; it's now in v1 — see 11.)

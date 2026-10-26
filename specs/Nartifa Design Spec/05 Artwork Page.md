@@ -20,7 +20,7 @@ A link copied from the reveal screen opens in the detail state for whoever recei
 - The artwork, centered, natural shape, as large as fits with margin. Fades in over 600ms after a short pause (~300ms).
 - A **down arrow** at the bottom center. Tap or scroll → smooth scroll to the detail.
 - No price, title or other data on this screen.
-- No footer. Top bar shown (menu returns after the quiz).
+- No footer. Top bar with the menu icon, as on every page (01).
 
 ## Detail state
 

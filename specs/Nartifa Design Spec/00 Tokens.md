@@ -49,7 +49,7 @@ Stack: `"Instrument Sans", "Zen Kaku Gothic New", system-ui, sans-serif`. Latin 
 
 ## Spacing
 
-4px base. Use only these steps: `4, 8, 12, 16, 24, 32, 48, 64, 96`.
+4px base. Use only these steps: `4, 8, 12, 16, 24, 32, 48, 64, 96`. **One exception:** the mobile page margin is 20 (below), and only the page margin uses it.
 
 | Token | Value | Use |
 | --- | --- | --- |

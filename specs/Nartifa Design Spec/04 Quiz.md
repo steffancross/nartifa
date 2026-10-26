@@ -58,6 +58,7 @@ After step 6 → Artwork page in **reveal** state (see 05). Matching happens ins
 
 - Counter: "3 / 6" in `label` style.
 - **Back is required.** "← Back" text link under the choices (or top left on desktop). Goes to the previous step with the earlier answer shown as selected; picking again replaces it.
+- **No Back on step 1.** The 4b wireframe shows a ← on "1 / 6" and no menu icon; this spec wins on both. Step 1 has the menu icon (as every page) and no Back.
 - **Browser back (and iPhone swipe-back) does the same as Back.** Each step has its own history entry.
 - Refreshing the page mid-quiz starts again at step 1.
 

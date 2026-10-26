@@ -39,9 +39,9 @@ Trade-off accepted: the same answers can give a different work on a retake.
 
 In the browser.
 
-1. The quiz page is rendered with a compact list of live works: `[{ id, t: "abaab", f: "joy" }, …]` (about 2KB for 100 works). The tags are not secret.
-2. On the step 6 tap, `matching.ts` scores the list and picks a winner instantly.
-3. During the 350ms highlight hold, navigation to `/works/{id}?r=1` starts (prefetch the page). No loading screen (design spec 04).
+1. The quiz page is rendered with a compact list of live works: `[{ id, t: "abaab", f: "joy" }, …]` (about 2KB for 100 works). The tags are not secret. The list is part of the cached quiz page and cleared by the `works` tag (08).
+2. On the step 6 tap, `matching.ts` scores the list and picks a winner instantly. The random tie pick happens here, in the browser, so the cached page stays the same for everyone.
+3. During the 350ms highlight hold, prefetch `/works/{id}`, then set the reveal flag and navigate (03). No loading screen (design spec 04).
 
 `lib/matching.ts` is a pure function with unit tests (exact match, closest match, ties, empty list).
 

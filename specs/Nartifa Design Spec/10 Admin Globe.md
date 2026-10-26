@@ -15,7 +15,7 @@ The daily tool: open it, clear what's new. Built for the computer first; rows st
 - **Newest first.**
 - One row per upload: photo (150×110), place, time sent, comment (or "(no comment)"), **Approve** and **Reject** buttons.
 - **New** uploads (not yet seen) have a dot before the place name. The dot goes away once the row has been on screen for about a second.
-- Approve → becomes a live pin (on the globe within about a minute). Reject → moved to a separate **Rejected** area (kept, not shown). Nobody is notified (uploads are anonymous).
+- Approve → becomes a live pin (on the globe the next time it's loaded). Reject → moved to a separate **Rejected** area (kept, not shown). Nobody is notified (uploads are anonymous).
 - The decision is saved immediately and the row disappears. A 5-second "Undo" message reverses it. Closing the page never loses a decision.
 - Click the photo → larger view.
 - The waiting count also shows next to "Review queue" in the admin menu.

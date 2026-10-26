@@ -15,7 +15,7 @@ Design spec 09 and 10. Built on Payload's admin; custom only where the stock adm
 | Screen / feature | Stock Payload | Custom |
 | --- | --- | --- |
 | 9a Login | Login screen; forgot-password off | — |
-| 9b Artworks table | List view, search (title EN/JA), column picker, New button, delete confirm | Quick filter row; custom cells |
+| 9b Artworks table | List view, search, column picker, New button, delete confirm | Quick filter row; custom cells; `searchText` field so search covers both titles |
 | Row ⋯ menu | Bulk select + actions | Small custom cell (Edit · Hide/Show · Delete) |
 | 9c/9d Form | All fields, relationship "create new", drag reorder, unsaved-changes warning, Saving/Saved messages | Status hook; "Not live — missing: …" note |
 | 10a Review queue | — | **Custom admin view** |
@@ -37,7 +37,11 @@ Design spec 09 and 10. Built on Payload's admin; custom only where the stock adm
 | Updated | Relative ("3 days ago") |
 | ⋯ | Edit · Hide/Show · Delete |
 
-Search: `title` in both languages. Empty state: "No artworks yet" + New artwork.
+**Search: title in both languages.** Payload's list search only looks at the admin's current language for localized fields. So:
+- `searchText`: a hidden, read-only, **non-localized** text field on `artworks`. The `beforeChange` hook fills it with the Japanese and English titles, lower-cased: it reads the other language's title with `findByID({ locale: 'all' })` and merges the one being saved.
+- `admin.listSearchableFields: ['searchText']`. The stock search box then finds a work by either title, whatever language the admin is in.
+
+Empty state: "No artworks yet" + New artwork.
 
 ## Artwork form (9c / 9d) — Proposed: stock layout first
 
@@ -71,7 +75,7 @@ Validation (design spec 09): price whole number; year 4 digits; save always allo
 - Quick filters: All / Pending / Live / Hidden / Rejected. **"All" excludes Rejected**; Rejected shows only when chosen.
 - From Rejected: **Restore** (→ pending) or delete permanently.
 - Columns: thumbnail (30×30), place, comment (one line), status, sent date, ⋯ (Edit · Hide/Show · Delete).
-- Search: place or comment.
+- Search: place or comment — `admin.listSearchableFields: ['cityNameEn', 'cityNameJa', 'comment']`. These fields aren't localized, so stock search covers both languages with no extra field.
 
 ## Edit upload (10c)
 

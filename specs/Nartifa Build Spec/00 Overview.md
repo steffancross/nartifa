@@ -36,8 +36,9 @@ Same as the design spec:
 | CMS + admin | Payload 3, running inside the same Next.js app |
 | Database | Cloudflare D1, via Payload's D1/SQLite adapter |
 | File storage | Cloudflare R2, via Payload's R2 storage adapter |
-| Image resizing | Cloudflare Image Transformations |
-| UI strings | next-intl, **without** URL-based routing |
+| Image resizing | Cloudflare Images binding, at upload; sizes stored in R2 |
+| UI strings + language | next-intl, `localePrefix: 'never'` — language hidden from the URL, used internally so each language caches separately |
+| Page cache | OpenNext: R2 incremental cache + D1 tag cache, cleared on save |
 | Globe | three.js directly (no wrapper library) |
 | Spam protection | Cloudflare Turnstile |
 | Analytics | Cloudflare Web Analytics |
@@ -45,20 +46,39 @@ Same as the design spec:
 
 Starting point: Payload's official Cloudflare template (Worker + D1 + R2 already wired).
 
+### Versions (checked 2026-10-25)
+
+| Package | Template pins | Use |
+| --- | --- | --- |
+| `next` | 16.4.2 | As pinned. Next 16 decides the API choices below |
+| `payload`, `@payloadcms/*` | 3.82.1 | Update to the latest 3.x (3.92.0 when checked). All `@payloadcms/*` packages on the same version |
+| `@opennextjs/cloudflare` | `^1.11.0` | **`>=1.20.3`** — first version that supports `proxy.ts` (03) |
+| `wrangler` | `~4.116.0` | **`^4.148.0`** — required by current OpenNext |
+| `next-intl` | — | Latest 4.x (supports Next 16) |
+
+**Next 16 API choices** (so nobody hits these mid-build):
+- `proxy.ts`, not `middleware.ts` (03).
+- `revalidateTag(tag, { expire: 0 })` in Payload hooks. The one-argument form is deprecated, and `'max'` would serve the first visitor after a save the old page (08).
+- Data caching uses `unstable_cache` with tags, **not** `'use cache'`. `'use cache'` needs `cacheComponents` turned on, which changes how every route renders, including Payload's admin. Not worth that risk here.
+- Route segment config (`revalidate = false`, `generateStaticParams`) works because `cacheComponents` stays off.
+
 ## Architecture
 
 ```
-                         ┌──────────────── One Cloudflare Worker ────────────────┐
- Visitor ──▶ public pages│ Next.js pages ──▶ Payload local API ──▶ D1 (records)  │
-                         │      │                    │                           │
- Artist ───▶ /admin ─────│ Payload admin ────────────┘──────────▶ R2 (originals)  │
-                         │      │                                     │          │
-                         │ /api/site/* (globe, cities, uploads) ──────┘          │
-                         │ /img/* image route ──▶ Image Transformations ──▶ edge │
-                         └────────────────────────────────────────────────────────┘
+                         ┌──────────────────── One Cloudflare Worker ─────────────────────┐
+ Visitor ──▶ public pages│ proxy.ts (language) ──▶ page cache (R2) ──hit──▶ HTML          │
+                         │                                │ miss                          │
+                         │                                ▼                               │
+                         │                     Next.js render ──▶ Payload local API ──▶ D1│
+ Artist ───▶ /admin ─────│ Payload admin ──save──▶ revalidateTag ──▶ tag cache (D1)       │
+                         │      └──────────────────────────────────────▶ R2 (originals)   │
+                         │ /api/site/* (globe, cities, uploads)                           │
+                         │ /img/* image route ──▶ R2 derived/ (sizes made at upload)      │
+                         └────────────────────────────────────────────────────────────────┘
 ```
 
-- Public pages call Payload's **local API** (a function call inside the Worker), not its HTTP API.
+- Public pages are cached per language and only call Payload on a cache miss (08).
+- Public pages call Payload's **local API** (a function call inside the Worker), not its HTTP API, always through `lib/data.ts`.
 - `/admin` and Payload's `/api/[collection]` REST routes are Payload's own.
 - Site-specific endpoints live under `/api/site/` so they never clash with Payload's routes.
 - Images are always served through `/img/*` in named sizes. The R2 bucket is private.
@@ -68,22 +88,27 @@ Starting point: Payload's official Cloudflare template (Worker + D1 + R2 already
 ```
 src/
   app/
-    (site)/            public pages: page.tsx (landing), quiz/, works/, works/[slug]/, globe/, about/
+    (site)/[locale]/   public pages: page.tsx (landing), quiz/, works/, works/[slug]/, globe/, about/, privacy/
     (payload)/         Payload admin + REST (from the template)
     api/site/          globe pins, uploads, city search
     img/[...path]/     image route
-  collections/         Artworks, Collections, Media, GlobePhotos, GlobeUploads, Users
+  collections/         Artworks, Series (labelled "Collections" — 02), Media, GlobePhotos, GlobeUploads, Users
   admin/               custom admin components (review queue, cells, filters, city picker)
   config/
     quiz.ts            steps, option keys, icon file names, feeling weight
     images.ts          named sizes
     limits.ts          upload limits, rate limits, queue cap
+  proxy.ts             language choice → next-intl rewrite (03). Next 16's name for middleware
   i18n/
+    routing.ts         next-intl routing (localePrefix 'never', cookie)
     ja.json  en.json   all fixed interface strings (incl. quiz words, About text)
   lib/
+    data.ts            ALL public reads: Payload local API wrapped in unstable_cache + tags (08)
     matching.ts        scoring + tie-break (pure functions, unit tested)
+    normalize.ts       city-name normalizing, shared by the import script and city search (06)
     images.ts          URL builder for named sizes
-    i18n.ts            the ONE function that reads the current language
+    i18n.ts            pick() / langOf() for artwork field fallback (03)
+    reveal.ts          in-memory reveal flag set by the quiz (03)
   globe/               three.js scene, picking, controls
 scripts/
   import-geonames.ts   loads the city list into D1
@@ -98,7 +123,9 @@ The design spec (v1.1) and *NARTIFA Open Decisions.md* have been updated to matc
 | Design spec v1 said | Now | Where |
 | --- | --- | --- |
 | Language in the URL (`/ja/…`, `/en/…`) — Decided | **One URL per page.** Language from cookie, else browser language, else Japanese | 03 |
-| Photo GPS data not read or used — Decided | **GPS read in the browser to pre-fill the city**, rounded, never sent or stored. Only the city is shown | 06 |
+| Photo GPS data not read or used — Decided | Briefly changed to a GPS pre-fill of the city, then **reverted 2026-10-25**: iOS strips location from web uploads, so it would rarely work. GPS is not read. The server also re-encodes every photo, so none is ever stored | 06 |
+| Legal / privacy copy — Deferred | **In v1, before uploads go public:** consent line above Send and a `/privacy` page (design spec 11) | 06, 09 |
+| Place suggestions: "City, Country" | Suggestions also show the region (e.g. prefecture) so same-named places can be told apart (Proposed). The stored name stays "City, Country" | 06 |
 | Pins are plain white dots (`pin` token) | Plain dots **for now**. Will become the artist's custom PNG later; the build must allow swapping it | 06 |
 | Artwork form two-column layout (9c) | **Payload's own layout first**, styled; revisit after the first build | 07 |
 | Collections paused | Collection **data** is built now (admin can create them, many per work); only the graphic is paused | 02 |
@@ -109,7 +136,13 @@ The design spec (v1.1) and *NARTIFA Open Decisions.md* have been updated to matc
 ## Conventions
 
 1. **Content vs fixed text.** Anything the artist types (artwork fields, collections) lives in Payload with EN/JA fields. Anything fixed (menu, buttons, quiz words, About text, errors) lives in `ja.json` / `en.json`.
-2. **Never write a language into a URL by hand.** Use next-intl's `Link` / `redirect` helpers and read the language through `lib/i18n.ts` only. This keeps a future switch to `/ja/` URLs a small change.
+2. **Never write a language into a URL by hand.** Use next-intl's `Link` / `redirect` / `useRouter` helpers and read the language through next-intl only. This keeps a future switch to `/ja/` URLs a small change.
 3. **Values in config, not code.** Quiz words, feeling weight, image sizes, upload limits and rate limits live in `src/config/` or the i18n files.
 4. **Missing data is not rendered** (design spec rule 2). Components take optional props and render nothing for empty values.
 5. **Store keys, not words.** Tags are stored as `a`/`b` and feeling keys; the words come from i18n. Changing a word never changes existing data.
+6. **Public pages are static.** Nothing under `app/(site)/[locale]/` reads `cookies()`, `headers()` or `searchParams`, and all data comes through `lib/data.ts`. Anything per-visitor happens in the browser (08).
+7. **Never `100vh`.** In mobile Safari and Instagram's in-app browser, the toolbars make `100vh` taller than the visible screen, so "one screen" layouts get cut off or scroll.
+   - Screens that must fit without scrolling (landing, quiz, reveal): `min-height: 100svh` — the height with toolbars showing.
+   - Overlays (menu, photo view, full-screen artwork viewer, upload sheet): `position: fixed; inset: 0`, no viewport units.
+   - Globe canvas: fills a `fixed; inset: 0` container and resizes the renderer on `resize` / `ResizeObserver`.
+8. **Test in Instagram's in-app browser.** Most visitors arrive there (design spec rule 5). Every phase's check includes it on iPhone and Android, not only Safari and Chrome.

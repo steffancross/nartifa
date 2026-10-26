@@ -14,7 +14,7 @@ Top to bottom:
 3. Photo, if present — full text width, natural shape.
 4. Text — `body`, max 640px, left-aligned. Paragraphs separated by 24px.
 5. Contact: one short line and a **Message on Instagram** link (opens DM, new tab on desktop).
-6. Credit line at the very bottom, `label` size, `text-3`: "City data © GeoNames (CC BY 4.0)". Required by the city list's licence.
+6. Bottom line, `label` size, `text-3`: a **Privacy** link to `/privacy` (11), then the credit "City data © GeoNames (CC BY 4.0)". The credit is required by the city list's licence.
 
 No separate Contact page. The menu "About" item covers both.
 
