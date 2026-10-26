@@ -1,0 +1,206 @@
+# NARTIFA — Build Checklist
+
+Created 2026-10-26. Tick items as they're done: `- [ ]` → `- [x]`.
+
+The checklist covers what to do; the specs cover how. References: **B** = *Nartifa Build Spec*, **D** = *Nartifa Design Spec* (e.g. B05 = Build Spec/05 Images.md). A phase is done when its **Phase check** is ticked. Lines with `___` are for writing down a result.
+
+---
+
+## Phase 0 — Foundation and early checks
+
+The risky assumptions get proven here. If one fails, update the spec before moving on.
+
+**Setup**
+- [ ] Workers Paid plan on Steffan's account (B01)
+- [ ] Payload Cloudflare template running locally (B00)
+- [ ] Packages updated: Payload latest 3.x (all `@payloadcms/*` on one version), OpenNext `>=1.20.3`, wrangler `^4.148.0`, next-intl 4.x (B00 Versions)
+- [ ] D1 created with `--location=apac`; R2 bucket created with `apac` hint (B01 Location)
+- [ ] `autoIncrement: true` in the D1 adapter — **before the first migration** (B02 Permanent links)
+- [ ] Bindings: `D1`, `R2`, `IMAGES`, `NEXT_INC_CACHE_R2_BUCKET` (same bucket), `NEXT_TAG_CACHE_D1` (same database), `WORKER_SELF_REFERENCE` (B01)
+- [ ] Secrets and vars: `PAYLOAD_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `IP_HASH_SALT`, `INSTAGRAM_HANDLE` (Turnstile keys in Phase 5) (B01)
+- [ ] `open-next.config.ts`: R2 incremental cache + D1 tag cache, no queue (B08)
+- [ ] Deployed to `workers.dev` with `opennextjs-cloudflare deploy`
+- [ ] `seed-admin` script; admin login works (B01)
+
+**Structure**
+- [ ] Repo layout per B00: `app/(site)/[locale]/`, `(payload)/`, `api/site/`, `img/`, `config/`, `lib/`
+- [ ] Tokens as CSS variables (public dark + admin light), fonts defined in one place (D00 Tokens, B08)
+- [ ] next-intl routing: `localePrefix: 'never'`, default `ja`, cookie `lang` for 1 year (B03)
+- [ ] `proxy.ts`: first `Accept-Language` entry → `ja`/`en`, then next-intl; matcher skips `/admin`, `/api`, `/img`, `/_next`, files (B03)
+- [ ] `ja.json` / `en.json` with placeholder text
+- [ ] Localized 404s: `[locale]/[...rest]/page.tsx` + `[locale]/not-found.tsx` (B03)
+- [ ] `lib/data.ts` with one `unstable_cache` read tagged `works`; one Payload hook calling `revalidateTag('works', { expire: 0 })` (B08)
+
+**Verify** (B09)
+- [ ] Bundle under 10MB compressed — size: ___
+- [ ] Cold start from Japan — time: ___
+- [ ] Page cache: second visit doesn't call Payload (log it); an admin save clears it; `ja` and `en` cached separately; `revalidations` table created by deploy
+- [ ] `proxy.ts` works on OpenNext (language switches correctly). If not: rename to `middleware.ts`
+- [ ] Ids never reused: create works 1–3, delete 3, create one → it gets 4
+- [ ] Images binding works on `workers.dev` (one test transform)
+- [ ] Payload admin can: redirect dashboard → artworks, hide collections from nav, change delete confirm text (B07)
+- [ ] **Phase check:** everything above passes, or the spec is updated with what changed
+
+---
+
+## Phase 1 — Data model and artwork admin (D09)
+
+**Collections** (B02)
+- [ ] `artworks` with all fields, incl. `status`, `missing`, `searchText`
+- [ ] `series`, labelled "Collections" / "コレクション"
+- [ ] `media`: R2 under `media/`, JPG/PNG/WebP, `upload.limits.fileSize: 20_000_000` (B05)
+- [ ] `users`: one account, forgot-password off (B01)
+- [ ] Migrations generated and applied
+
+**Hooks**
+- [ ] Status hook computes `status` and `missing` (B02)
+- [ ] Deleting a `media` used as a `mainImage` is blocked (B02)
+- [ ] `searchText` filled with both titles; `listSearchableFields: ['searchText']` (B07)
+- [ ] Revalidation: `artworks`, `media`, `series` → `works`; skipped when `context.skipRevalidate` (B08)
+
+**Images** (B05)
+- [ ] `config/images.ts` sizes; `lib/images.ts` URL builder
+- [ ] `beforeChange`: all sizes via the binding, kept in `req.context`; throw on failure
+- [ ] Orientation fix: compare `lg` output shape with stored width/height, swap if different
+- [ ] `afterChange`: write `derived/{collection}/{id}/{size}.webp`
+- [ ] `afterDelete`: delete original + derived files
+- [ ] Image route `/img/{collection}/{id}/{size}?v=`: checks, R2 read, rebuilds a missing size, cache headers
+- [ ] Verify: portrait phone JPEG → all sizes upright, no EXIF, stored dimensions portrait
+- [ ] Verify: an oversized file is rejected with a clear message
+
+**Admin UI** (B07)
+- [ ] `/admin` opens on the artworks table; nav: Artworks · Review queue · Submissions · Collections
+- [ ] Admin colors; EN/JA field labels; delete confirm says it can't be recovered
+- [ ] Artworks table: quick filters, custom cells (thumb, title, price, status with what's missing, updated, ⋯ menu), empty state
+- [ ] Artwork form in Payload's layout: sidebar (Live, status note, Collections) + sections (Images, Matching, Content); price/year validation
+- [ ] **Decision:** stock form layout good enough, or build custom 9c? → ___
+- [ ] **Phase check:** the artist can log in and add test works
+
+---
+
+## Phase 2 — Artwork page and All Works (D05, D06)
+
+- [ ] Artwork detail: stacked on mobile; 60/40 on desktop with sticky text (D05)
+- [ ] Fields in order; empty ones not rendered; image + price alone looks finished (D05)
+- [ ] Field-level language fallback with `lang="ja"` wrapping (B03)
+- [ ] Price: "¥22,000" / "Price on request"
+- [ ] Extra images: thumbnails, swap, full-screen viewer with ✕, swipe on mobile
+- [ ] Image placeholders at the stored shape (`surface-2`)
+- [ ] "No longer available" 404: `notFound()` before streaming, no `loading.tsx` above the lookup (B03)
+- [ ] All Works: full list in page, newest first, 24 cards at a time; 2/3/4 columns; square cards; one-line title (D06, B03)
+- [ ] All Works states: first load, loading more, few works, error + Try again (D06)
+- [ ] Scroll position restored on back (B03)
+- [ ] Social previews: title, `og` image, Japanese description (B08)
+- [ ] **Phase check:** pages cached per language; an admin save shows on the next visit
+
+---
+
+## Phase 3 — Quiz and matching (D04, B03, B04)
+
+- [ ] `config/quiz.ts`, i18n words, placeholder icons
+- [ ] Step screens: counter, question, two tiles; step 6 as 2×2 on mobile / row of four on desktop
+- [ ] Selecting: invert 150ms → hold 350ms (extra taps ignored) → advance 250ms; reduced motion = instant
+- [ ] Keyboard: arrow keys + Enter; focus outline
+- [ ] History: `quizStep` entries, Back = `history.back()`, dead-entry rule on mount, `popstate` rule (B03)
+- [ ] `lib/matching.ts` + unit tests: exact match, closest match, random ties, one work, empty list (B04)
+- [ ] "No works yet" state
+- [ ] Reveal: `lib/reveal.ts` flag + client navigation; fade 600ms after ~300ms; down arrow; "Take the quiz again" (B03, D05)
+- [ ] Result page prefetched during the hold
+- [ ] History test table (B03) passes on:
+  - [ ] iPhone Safari (incl. swipe-back)
+  - [ ] Android Chrome
+  - [ ] Instagram in-app, iPhone
+  - [ ] Instagram in-app, Android
+  - [ ] Desktop
+- [ ] **Phase check**
+
+---
+
+## Phase 4 — Landing, menu, About (D01, D03, D08)
+
+- [ ] Top bar: 56px, wordmark → landing, menu icon, 44px tap targets
+- [ ] Menu overlay: four links, current page highlighted, ✕ / Escape / link closes, page behind locked, 250ms fade
+- [ ] Language toggle `EN / JA`: writes `lang` cookie, `router.replace` in place (B03)
+- [ ] Instagram link in the menu
+- [ ] Landing: placeholder image, line, Start, "or see all works"; fits one screen with `svh` (D03, B00 convention 7)
+- [ ] About: title, optional photo, text from i18n, Message on Instagram, Privacy link + GeoNames credit (D08)
+- [ ] Verify Instagram DM links from inside Instagram's in-app browser; fallback to profile link if needed (B03)
+- [ ] "Ask about this work" link, per that result
+- [ ] Cloudflare Web Analytics
+- [ ] **Phase check**
+
+---
+
+## Phase 5 — Globe (D07, D10, D11)
+
+**Data**
+- [ ] `globe-photos` (R2 `globe-photos/`), `globe-uploads`, `upload_attempts` table + migration (B02)
+- [ ] `cities` table migration; `lib/normalize.ts`
+- [ ] `import-geonames` run — cities: ___ · with Japanese name: ___ · with region: ___ (B02)
+- [ ] City search endpoint: range query, 2 Latin / 1 Japanese character minimum, top 8 (B06)
+
+**Globe**
+- [ ] `build-globe-texture` script (Natural Earth, 2048×1024)
+- [ ] three.js scene, loaded only on `/globe`
+- [ ] Pins: one `Points` object, plain dots, same-city spiral, material easy to swap for the custom pin
+- [ ] Tapping: nearest pin within 22px, far side ignored, tap vs drag
+- [ ] Controls: rotate + zoom, no pan, damping, auto-rotate until first touch, off with reduced motion, paused when tab hidden
+- [ ] Loading circle; no-WebGL fallback
+- [ ] Pins + upload detail endpoints, cached with the `globe` tag (B06)
+- [ ] Photo view
+
+**Upload**
+- [ ] Upload sheet (bottom sheet / side panel): photo + preview, place search with region, comment counter, Turnstile, consent line, Send states (D07, D11)
+- [ ] Browser re-encode: 2400px, JPEG ~0.85
+- [ ] Server checks in order: Turnstile → visitor limit → IP limit → queue cap → file → city → comment (B06)
+- [ ] Visitor cookie `v` set on first upload only
+- [ ] Server clean copy: binding → WebP, the only file stored (B06)
+- [ ] Thank you state
+- [ ] `/privacy` page (D11)
+
+**Admin** (B07, D10)
+- [ ] Review queue: newest first, count badge, New dot via `seenAt`, Approve/Reject save at once, 5s Undo, row error, larger photo view, empty state
+- [ ] Waiting count next to "Review queue" in the nav
+- [ ] Submissions table: filters ("All" excludes Rejected), Restore, search, columns, bulk reject
+- [ ] Edit upload: city picker, coordinates read-only
+- [ ] Admins can see non-live photos through the image route
+- [ ] Revalidation: `globe-uploads`, `globe-photos` → `globe`
+- [ ] **Before uploads open to the public:** artist's privacy answers are in (see Waiting on the artist)
+- [ ] **Phase check**
+
+---
+
+## Phase 6 — Polish and go-live
+
+**Polish**
+- [ ] Real copy in both languages; bilingual checks at 375px (D00 rules)
+- [ ] Reduced motion everywhere; keyboard and focus
+- [ ] Full Instagram in-app pass, iPhone and Android: layouts, quiz, globe, upload, Turnstile, DM links (B00 convention 8)
+- [ ] Logging: failed uploads, Turnstile failures, rate-limit hits, image route errors — never IPs, photos or coordinates (B08)
+
+**Go-live on the artist's account** (B01)
+- [ ] Workers Paid plan on the artist's account
+- [ ] D1 (`apac`) + R2 (`apac`) created by the setup script
+- [ ] Secrets and vars set; Turnstile keys for the real domain
+- [ ] Custom domain attached
+- [ ] Migrations, `seed-admin`, `import-geonames` run
+- [ ] Deployed; every page checked in both languages
+- [ ] Web Analytics on the real domain; Workers logs on
+- [ ] **Launched**
+
+---
+
+## Waiting on the artist
+
+Placeholders stand in until each one arrives. Only the privacy items block anything (public uploads).
+
+- [ ] Quiz and feeling icons
+- [ ] Landing image
+- [ ] Site-wide share image
+- [ ] Copy: landing line, quiz questions, reveal line, upload text, About
+- [ ] About photo (optional)
+- [ ] Globe final look (7f)
+- [ ] Custom pin image, and flat or facing the viewer
+- [ ] Privacy: visitor photos used beyond the site? (D11)
+- [ ] Privacy: operator line (D11)
+- [ ] Review of the consent line and privacy drafts (D11)
