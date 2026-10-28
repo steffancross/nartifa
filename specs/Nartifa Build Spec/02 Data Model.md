@@ -53,11 +53,13 @@ status   = !live            → hidden
 
 - Set `sqliteD1Adapter({ …, autoIncrement: true })` in `payload.config.ts` **before the first migration is generated**. SQLite can't add `AUTOINCREMENT` to an existing table, so turning it on later means rebuilding tables.
 - It applies to every collection. Harmless, and it also keeps globe upload ids from being reused.
+- Payload's link tables (`*_rels`, e.g. `artworks_rels` for collections) don't get it. Fine: their rows are never linked to.
+- **Done (2026-10-28):** set in `payload.config.ts`; the template's own migration (generated without it) was deleted and `src/migrations/*_initial.ts` regenerated, so every table is created with `AUTOINCREMENT` from the first migration on.
 - Ids are not editable in the admin and nothing else is ever used in the URL, so a work's link can't change.
 - The go-live database starts fresh at 1. That's fine: build-time links are on `workers.dev`, a different address, so none of them can point at the new site.
 - If the database is ever moved by export/import rather than Cloudflare's own restore, check that the next new id is higher than every existing one before going live again.
 
-Confirmed in Phase 0 (09): create works 1–3, delete 3, create one more — it must get 4.
+Confirmed in Phase 0 (09): create works 1–3, delete 3, create one more — it must get 4. `artworks` only exists from Phase 1, so Phase 0 runs the same test on `media` (the setting is adapter-wide), and Phase 1 repeats it on `artworks`.
 
 ## `series` (shown as "Collections")
 

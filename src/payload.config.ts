@@ -13,9 +13,22 @@ import { Media } from './collections/Media'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
-const realpath = (value: string) => (fs.existsSync(value) ? fs.realpathSync(value) : undefined)
+const realpath = (value: string) => {
+  try {
+    return fs.existsSync(value) ? fs.realpathSync(value) : undefined
+  } catch {
+    return undefined
+  }
+}
 
-const isCLI = process.argv.some((value) => realpath(value).endsWith(path.join('payload', 'bin.js')))
+const isCLI = process.argv.some((value) => {
+  const resolved = realpath(value)
+  if (!resolved) return false
+  return (
+    resolved.endsWith(path.join('payload', 'bin.js')) ||
+    resolved.endsWith(path.join('next', 'dist', 'bin', 'next'))
+  )
+})
 const isProduction = process.env.NODE_ENV === 'production'
 
 const createLog =
@@ -56,9 +69,11 @@ export default buildConfig({
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
-  db: sqliteD1Adapter({ binding: cloudflare.env.D1 }),
+  // autoIncrement: ids are never reused after a delete. Work ids are permanent URLs (/works/12),
+  // and SQLite can't add AUTOINCREMENT to an existing table, so this must be on before the first migration
+  db: sqliteD1Adapter({ binding: cloudflare.env.D1, autoIncrement: true }),
   logger: isProduction ? cloudflareLogger : undefined,
-  storage: [
+  plugins: [
     r2Storage({
       bucket: cloudflare.env.R2,
       collections: { media: true },

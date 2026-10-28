@@ -63,3 +63,14 @@ One D1 database and one R2 bucket in total (the page cache shares them — 08).
 - Use the template's deploy flow: `payload migrate` for schema changes, then `opennextjs-cloudflare build` and `opennextjs-cloudflare deploy` (populates the page cache — see 08).
 - Every schema change gets a Payload migration. No manual edits to D1.
 - The `cities` table has its own SQL migration (it is outside Payload — see 02).
+- `pnpm run deploy:database` runs `payload migrate` from your machine with `NODE_ENV=production`, which makes `payload.config.ts` connect to the **real** D1 (the binding has `"remote": true`). Migrations reach Cloudflare only this way.
+
+## Local development
+
+- `pnpm dev` runs Next.js in Node. `payload.config.ts` gets the bindings from wrangler's `getPlatformProxy` (Miniflare) with remote bindings **off**, so D1 and R2 are local stand-ins in `.wrangler/state/v3/` (gitignored):
+  - D1: a real SQLite file under `d1/miniflare-D1DatabaseObject/`.
+  - R2: uploaded files kept on disk under `r2/`, with a small SQLite index.
+  - Nothing touches Cloudflare. Delete `.wrangler/state` to start from an empty database and bucket.
+- In dev, Payload's **push** mode builds the local tables straight from the collection code (no migration files). Migrations are created with `payload migrate:create` when a feature is done and only run against the real D1. Don't run `payload migrate` against the pushed local database (Payload warns; data loss).
+- `pnpm dev` does **not** exercise the Worker runtime or OpenNext's page cache. For those, use `pnpm preview` (builds with OpenNext and runs it in the local Workers runtime) or deploy to `workers.dev`.
+- Local secret for dev: set `PAYLOAD_SECRET` in `.env` (gitignored; copy `.env.example`).

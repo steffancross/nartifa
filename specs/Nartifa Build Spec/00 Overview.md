@@ -45,17 +45,22 @@ Same as the design spec:
 | Analytics | Cloudflare Web Analytics |
 | Logs | Workers logs (no external error service) |
 
-Starting point: Payload's official Cloudflare template (Worker + D1 + R2 already wired).
+Starting point: Payload's official Cloudflare template (Worker + D1 + R2 already wired), **taken from the `v3.92.1` release tag** (`payloadcms/payload/templates/with-cloudflare-d1#v3.92.1`).
 
-### Versions (checked 2026-10-25)
+**Don't take the template from Payload's `main` branch.** Since 2026-10, `main` is Payload 4.0 beta: its template still pins 3.82.1 in `package.json`, but its code is written for 4.0 (e.g. `generatePayloadViewport` in the admin layout, `storage: [r2Storage()]` instead of `plugins: [...]`). On 3.x the admin fails to load and R2 is silently not wired. Any future template file should come from the tag matching the installed Payload version.
 
-| Package | Template pins | Use |
-| --- | --- | --- |
-| `next` | 16.4.2 | As pinned. Next 16 decides the API choices below |
-| `payload`, `@payloadcms/*` | 3.82.1 | Update to the latest 3.x (3.92.0 when checked). All `@payloadcms/*` packages on the same version |
-| `@opennextjs/cloudflare` | `^1.11.0` | **`>=1.20.3`** — first version that supports `proxy.ts` (03) |
-| `wrangler` | `~4.116.0` | **`^4.148.0`** — required by current OpenNext |
-| `next-intl` | — | Latest 4.x (supports Next 16) |
+### Versions (repo state 2026-10-28)
+
+| Package | `v3.92.1` template pins | Repo uses | Why it differs |
+| --- | --- | --- | --- |
+| `payload`, `@payloadcms/*` | 3.92.0 | **3.92.1** | Latest 3.x. All `@payloadcms/*` packages on the same version |
+| `next` | 16.3.3 | **16.4.2** | OpenNext 1.20.13 requires `next >=16.4.1`. Payload 3.92 supports `>=16.3.3 <17`. Next 16 decides the API choices below |
+| `@opennextjs/cloudflare` | 1.20.1 | **`^1.20.13`** | `>=1.20.3` is the first version that supports `proxy.ts` (03) |
+| `wrangler` | `~4.116.0` | **`^4.154.0`** | Current OpenNext requires `^4.148.0` |
+| `next-intl` | — | **`^4.14.9`** | Latest 4.x (supports Next 16) |
+| `react`, `react-dom` | 19.2.6 | 19.2.6 | As pinned |
+| `typescript` | 5.7.3 | 5.7.3 | As pinned (6.x breaks a test-tooling peer) |
+| Node | `^22.23.4 \|\| >=24.22.1` | 24 (`.nvmrc`) | |
 
 **Next 16 API choices** (so nobody hits these mid-build):
 - `proxy.ts`, not `middleware.ts` (03).

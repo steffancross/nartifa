@@ -11,11 +11,11 @@ The checklist covers what to do; the specs cover how. References: **B** = *Narti
 The risky assumptions get proven here. If one fails, update the spec before moving on.
 
 **Setup**
-- [ ] Workers Paid plan on Steffan's account (B01)
-- [ ] Payload Cloudflare template running locally (B00)
-- [ ] Packages updated: Payload latest 3.x (all `@payloadcms/*` on one version), OpenNext `>=1.20.3`, wrangler `^4.148.0`, next-intl 4.x (B00 Versions)
+- [x] Workers Paid plan on Steffan's account (B01)
+- [x] Payload Cloudflare template running locally — from the `v3.92.1` tag, not `main` (B00)
+- [x] Packages updated: Payload latest 3.x (all `@payloadcms/*` on one version), OpenNext `>=1.20.3`, wrangler `^4.148.0`, next-intl 4.x (B00 Versions)
 - [ ] D1 created with `--location=apac`; R2 bucket created with `apac` hint (B01 Location)
-- [ ] `autoIncrement: true` in the D1 adapter — **before the first migration** (B02 Permanent links)
+- [x] `autoIncrement: true` in the D1 adapter — **before the first migration**; template migration replaced (B02 Permanent links)
 - [ ] Bindings: `D1`, `R2`, `IMAGES`, `NEXT_INC_CACHE_R2_BUCKET` (same bucket), `NEXT_TAG_CACHE_D1` (same database), `WORKER_SELF_REFERENCE` (B01)
 - [ ] Secrets and vars: `PAYLOAD_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `IP_HASH_SALT`, `INSTAGRAM_HANDLE` (Turnstile keys in Phase 5) (B01)
 - [ ] `open-next.config.ts`: R2 incremental cache + D1 tag cache, no queue (B08)
@@ -36,7 +36,7 @@ The risky assumptions get proven here. If one fails, update the spec before movi
 - [ ] Cold start from Japan — time: ___
 - [ ] Page cache: second visit doesn't call Payload (log it); an admin save clears it; `ja` and `en` cached separately; `revalidations` table created by deploy
 - [ ] `proxy.ts` works on OpenNext (language switches correctly). If not: rename to `middleware.ts`
-- [ ] Ids never reused: create works 1–3, delete 3, create one → it gets 4
+- [x] Ids never reused: create 1–3, delete 3, create one → it gets 4 (on `media` in Phase 0; `artworks` again in Phase 1 — B02) — passed locally 2026-10-28: got 4. Recheck on the real D1 after the first deploy
 - [ ] Images binding works on `workers.dev` (one test transform)
 - [ ] Payload admin can: redirect dashboard → artworks, hide collections from nav, change delete confirm text (B07)
 - [ ] **Phase check:** everything above passes, or the spec is updated with what changed
@@ -50,6 +50,7 @@ The risky assumptions get proven here. If one fails, update the spec before movi
 - [ ] `series`, labelled "Collections" / "コレクション"
 - [ ] `media`: R2 under `media/`, JPG/PNG/WebP, `upload.limits.fileSize: 20_000_000` (B05)
 - [ ] `users`: one account, forgot-password off (B01)
+- [ ] Ids never reused on `artworks`: repeat the Phase 0 test (B02)
 - [ ] Migrations generated and applied
 
 **Hooks**
