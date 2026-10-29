@@ -14,7 +14,7 @@ The risky assumptions get proven here. If one fails, update the spec before movi
 - [x] Workers Paid plan on Steffan's account (B01)
 - [x] Payload Cloudflare template running locally — from the `v3.92.1` tag, not `main` (B00)
 - [x] Packages updated: Payload latest 3.x (all `@payloadcms/*` on one version), OpenNext `>=1.20.3`, wrangler `^4.148.0`, next-intl 4.x (B00 Versions)
-- [ ] D1 created with `--location=apac`; R2 bucket created with `apac` hint (B01 Location)
+- [x] D1 created with `--location=apac`; R2 bucket created with `apac` hint (B01 Location) — by `scripts/setup-cloudflare.sh`; both report APAC (2026-10-29)
 - [x] `autoIncrement: true` in the D1 adapter — **before the first migration**; template migration replaced (B02 Permanent links)
 - [ ] Bindings: `D1`, `R2`, `IMAGES`, `NEXT_INC_CACHE_R2_BUCKET` (same bucket), `NEXT_TAG_CACHE_D1` (same database), `WORKER_SELF_REFERENCE` (B01)
 - [ ] Secrets and vars: `PAYLOAD_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `IP_HASH_SALT`, `INSTAGRAM_HANDLE` (Turnstile keys in Phase 5) (B01)

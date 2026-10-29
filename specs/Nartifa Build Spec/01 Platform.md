@@ -5,7 +5,7 @@
 - **Build on Steffan's Cloudflare account.** One environment only (no separate preview/production).
 - The artist uploads a few works there to try the admin.
 - **Go-live is a fresh setup on the artist's account**, not a migration: new Worker, D1, R2, Turnstile keys and domain. Test content on Steffan's account is not carried over.
-- Keep setup scripted (wrangler config, `seed-admin`, `import-geonames`, `build-globe-texture`) so the fresh setup is repeatable.
+- Keep setup scripted (wrangler config, `setup-cloudflare`, `seed-admin`, `import-geonames`, `build-globe-texture`) so the fresh setup is repeatable.
 
 ## Location — Decided
 
@@ -17,6 +17,22 @@ One D1 database and one R2 bucket in total (the page cache shares them — 08).
 - Create the R2 bucket with location hint `apac`.
 - Don't enable Smart Placement: with data in APAC, running the Worker next to the visitor is already right.
 - Part of the setup script, so the go-live setup on the artist's account gets it too. It can't be changed after creation.
+
+### Setup script — `scripts/setup-cloudflare.sh`
+
+```
+CLOUDFLARE_ACCOUNT_ID=<id> scripts/setup-cloudflare.sh
+```
+
+- Creates the D1 database and R2 bucket `nartifa` with `--location=apac`. No jurisdiction (it would override the location), default storage class.
+- Shows the account name and asks for `yes` before creating anything. Anything that already exists is left alone, so it is safe to re-run.
+- Afterwards it checks both report `APAC` and prints the `database_id` to put in `wrangler.jsonc`, filled by hand.
+- Both create commands pass `--update-config=false`. Without it wrangler asks to add its own binding for the new resource, named after the resource. It added a second `nartifa` binding next to `D1`/`R2`, failed on the bucket (binding names must be unique) and re-indented the whole file.
+- **Resource name vs binding name:** `database_name` / `bucket_name` is the resource's name on the account (unique per type, so the D1 and the bucket can both be `nartifa`). `binding` is the name the code uses (`env.D1`, `env.R2`) and must be unique within the Worker. Several bindings may point at one resource, which is how the page cache shares the database and bucket (08).
+- It doesn't create the Worker. The first `pnpm run deploy` creates the `nartifa` Worker from `name` in `wrangler.jsonc`.
+- **Account selection:** the wrangler login is per computer, not per repo, and can reach more than one account. `account_id` in `wrangler.jsonc` pins most commands, but `wrangler r2 …` ignores it and stops with "More than one account available". So set `CLOUDFLARE_ACCOUNT_ID` for every wrangler command run by hand. The script refuses to run unless it is set and matches `account_id` in `wrangler.jsonc`.
+- **Go-live:** change `account_id` in `wrangler.jsonc` to the artist's account, run the script with their id, then fill the new `database_id`.
+- **Steffan's account (created 2026-10-29):** D1 `nartifa` `b25a6db9-b6b4-4886-9aaf-f8f17c5b194b`, region APAC. R2 `nartifa`, location APAC, Standard.
 
 ## Costs — Decided
 

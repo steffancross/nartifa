@@ -21,7 +21,7 @@
   "d1_databases": [
     {
       "binding": "D1",
-      "database_id": "DATABASE_ID",
+      "database_id": "b25a6db9-b6b4-4886-9aaf-f8f17c5b194b",
       "database_name": "nartifa",
       "remote": true,
     },

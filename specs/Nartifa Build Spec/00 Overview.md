@@ -117,6 +117,7 @@ src/
     reveal.ts          in-memory reveal flag set by the quiz (03)
   globe/               three.js scene, picking, controls
 scripts/
+  setup-cloudflare.sh  creates the D1 database and R2 bucket in APAC (01)
   import-geonames.ts   loads the city list into D1
   build-globe-texture.ts  draws land onto the sphere texture
   seed-admin.ts        creates / resets the admin user from env vars
