@@ -1,13 +1,14 @@
 import type { CollectionConfig, Field } from 'payload'
 
 import { FEELINGS, SENSE_OPTIONS, SENSES } from '@/config/quiz'
+import { setSearchText, setStatus } from '@/hooks/artworks'
 import { revalidateOnChange } from '@/hooks/revalidate'
 import { adminLabel } from '@/i18n/admin-labels'
 import { CACHE_TAGS } from '@/lib/cache-tags'
 
 // Fields as in Build Spec 02. The id is the URL slug (/works/12): AUTOINCREMENT in the adapter means
-// it is never reused. status, missing and searchText are filled by hooks (next chunk); the form
-// layout (sidebar, sections) comes with the admin UI chunk
+// it is never reused. status, missing and searchText are filled by hooks (src/hooks/artworks.ts);
+// the form layout (sidebar, sections) comes with the admin UI chunk
 
 const senseFields: Field[] = SENSES.map((sense) => ({
   name: sense,
@@ -28,8 +29,13 @@ export const Artworks: CollectionConfig = {
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['title', 'status', 'price', 'updatedAt'],
+    // The list search box looks in both titles, whichever admin language is in use
+    listSearchableFields: ['searchText'],
   },
-  hooks: revalidateOnChange(CACHE_TAGS.works),
+  hooks: {
+    beforeChange: [setStatus, setSearchText],
+    ...revalidateOnChange(CACHE_TAGS.works),
+  },
   fields: [
     {
       name: 'live',

@@ -1,0 +1,26 @@
+import type { CollectionAfterDeleteHook, CollectionBeforeDeleteHook } from 'payload'
+
+// Deleting an image is always allowed. A work that used it as its main image comes off the site:
+// it is re-saved with no main image, so its status becomes incomplete until a new one is chosen.
+// The database empties the field by itself (ON DELETE set null) but that wouldn't recompute the
+// status. Extra images need nothing: the database drops them from the list (Build Spec 02)
+const contextKey = (id: number | string) => `mainImageOf:${id}`
+
+// Before the delete, while the works still point at the image
+export const findWorksUsingImage: CollectionBeforeDeleteHook = async ({ id, req }) => {
+  const { docs } = await req.payload.find({
+    collection: 'artworks',
+    where: { mainImage: { equals: id } },
+    depth: 0,
+    pagination: false,
+    req,
+  })
+  req.context[contextKey(id)] = docs.map((work) => work.id)
+}
+
+export const clearMainImage: CollectionAfterDeleteHook = async ({ id, req }) => {
+  const workIds = (req.context[contextKey(id)] as number[] | undefined) ?? []
+  for (const workId of workIds) {
+    await req.payload.update({ collection: 'artworks', id: workId, data: { mainImage: null }, req })
+  }
+}

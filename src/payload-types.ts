@@ -174,7 +174,8 @@ export interface Media {
  */
 export interface Series {
   id: number;
-  name: string;
+  nameJa: string;
+  nameEn: string;
   slug?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -320,7 +321,8 @@ export interface ArtworksSelect<T extends boolean = true> {
  * via the `definition` "series_select".
  */
 export interface SeriesSelect<T extends boolean = true> {
-  name?: T;
+  nameJa?: T;
+  nameEn?: T;
   slug?: T;
   updatedAt?: T;
   createdAt?: T;

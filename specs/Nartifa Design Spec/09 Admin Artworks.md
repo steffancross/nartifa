@@ -33,7 +33,7 @@ Toolbar: search (title, EN or JA) · status filter as simple buttons (All / Live
 - **Incomplete** must say what's missing (e.g. "Incomplete: needs Smell, Feeling") so it isn't confused with manually hidden.
 - Click a row → edit form.
 - Delete asks for confirmation. Deleted works **cannot be recovered** — say so in the confirm step.
-- An image used as a work's main image can't be deleted on its own (it would silently take the work offline).
+- Deleting an image is always allowed. A work that used it as its main image goes to **Incomplete** ("needs Main image") and comes off the site; its Live switch stays on, so choosing a new main image puts it back. Two works sharing a main image is expected to be rare.
 
 ## Artwork form (9c edit, 9d new)
 
@@ -58,7 +58,7 @@ This is reviewed once real fields are in. If it doesn't look good, the form swit
 - Materials EN · Materials JA
 - Medium EN · Medium JA
 - Year
-- **Collections** — pick one or more. The artist can **add new collections** from the picker. Needed later for the collection graphic in 06.
+- **Collections** — pick one or more. The artist can **add new collections** from the picker; a new collection needs **both** a Japanese and an English name. Needed later for the collection graphic in 06.
 
 No alt text field — image descriptions are generated from the title.
 

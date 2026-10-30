@@ -62,17 +62,19 @@ The risky assumptions get proven here. If one fails, update the spec before movi
 
 **Collections** (B02)
 - [x] `artworks` with all fields, incl. `status`, `missing`, `searchText` (2026-10-30; the hooks that fill them are below)
-- [x] `series`, labelled "Collections" / "コレクション"
+- [x] `series`, labelled "Collections" / "コレクション" — `nameJa` + `nameEn`, both required (2026-10-30)
 - [x] `media`: R2 under `media/`, JPG/PNG/WebP, `upload.limits.fileSize: 20_000_000` (B05) — also: `alt` removed, read access logged-in only (originals were public via `/api/media/file`)
 - [x] `users`: one account per person (Steffan, artist), forgot-password off (B01) — link hidden via admin CSS; the artist's account is created with `seed-admin:remote` once live login works
 - [x] Ids never reused on `artworks`: repeat the Phase 0 test (B02) — permanent test `tests/int/artworks-ids.int.spec.ts`, passes locally; recheck on the real D1 with the Phase 0 one
-- [ ] Migrations generated and applied — `20261030_155951_collections` generated (2026-10-30). Applied to the real D1 by the next `pnpm run deploy`
+- [ ] Migrations generated and applied — `20261030_182139_collections` generated (2026-10-30; regenerated when collections got two required names). Applied to the real D1 by the next `pnpm run deploy`
 
 **Hooks**
-- [ ] Status hook computes `status` and `missing` (B02)
-- [ ] Deleting a `media` used as a `mainImage` is blocked (B02)
-- [ ] `searchText` filled with both titles; `listSearchableFields: ['searchText']` (B07)
-- [ ] Revalidation: `artworks`, `media`, `series` → `works`; skipped when `context.skipRevalidate` (B08)
+- [x] Status hook computes `status` and `missing` (B02) — on the whole work, so a Live-only save is right (2026-10-30)
+- [x] Deleting a `media` used as a `mainImage` takes the work off the site (`incomplete`, Live left on) — changed from "blocked" (B02, 2026-10-30)
+- [x] `searchText` filled with both titles; `listSearchableFields: ['searchText']` (B07)
+- [x] Revalidation: `artworks`, `media`, `series` → `works`; skipped when `context.skipRevalidate` (B08)
+- [x] Collection slug from the English name, made unique (B02)
+- All five: unit + `tests/int/hooks.int.spec.ts`, pass locally (2026-10-30)
 
 **Images** (B05)
 - [ ] `config/images.ts` sizes; `lib/images.ts` URL builder

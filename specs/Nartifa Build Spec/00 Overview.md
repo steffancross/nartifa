@@ -103,11 +103,15 @@ src/
   admin/               custom admin components (review queue, cells, filters, city picker)
   config/
     quiz.ts            senses, option keys a/b, feelings (in the repo); later: icon file names, feeling weight
+    artworks.ts        REQUIRED_FIELDS: what a work needs before it can be shown (02)
     images.ts          named sizes
     limits.ts          upload limits, rate limits, queue cap
   components/          shared site components (LanguageToggle for now)
   hooks/
     revalidate.ts      revalidateOnChange(tag): Payload afterChange/afterDelete hooks that clear a cache tag (08)
+    artworks.ts        status + missing, searchText (02, 07)
+    media.ts           deleting a main image takes its works off the site (02)
+    series.ts          collection slug from the English name (02)
   styles/
     fonts.ts           the three fonts (next/font/google), the one place to swap them
     tokens.css         design tokens as CSS variables + base rules (design spec Tokens)
@@ -121,6 +125,9 @@ src/
     ja.json  en.json   all fixed interface strings (incl. quiz words, About text)
   lib/
     cache-tags.ts      the two cache tags, works and globe (08)
+    artwork-status.ts  computeStatus: the status rule (pure, unit tested)
+    search-text.ts     buildSearchText (pure, unit tested)
+    slug.ts            slugify, uniqueSlug (pure, unit tested)
     data.ts            ALL public reads: Payload local API wrapped in unstable_cache + tags (08)
     matching.ts        scoring + tie-break (pure functions, unit tested)
     normalize.ts       city-name normalizing, shared by the import script and city search (06)

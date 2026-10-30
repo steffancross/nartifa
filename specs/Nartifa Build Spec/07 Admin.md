@@ -38,7 +38,8 @@ Design spec 09 and 10. Built on Payload's admin; custom only where the stock adm
 | ⋯ | Edit · Hide/Show · Delete |
 
 **Search: title in both languages.** Payload's list search only looks at the admin's current language for localized fields. So:
-- `searchText`: a hidden, read-only, **non-localized** text field on `artworks`. The `beforeChange` hook fills it with the Japanese and English titles, lower-cased: it reads the other language's title with `findByID({ locale: 'all' })` and merges the one being saved.
+- `searchText`: a hidden, read-only, **non-localized** text field on `artworks`. The `beforeChange` hook fills it with the Japanese and English titles, lower-cased: it reads the other language's title with `findByID({ locale: 'all' })` and merges the one being saved (`src/hooks/artworks.ts`, `src/lib/search-text.ts`).
+- That lookup is made **without** passing the save's `req`: a local API call with a `locale` overwrites `req.locale`, and the save would then store its title under `all` instead of the admin's language (caught by `tests/int/hooks.int.spec.ts`). Applies to any hook that reads in another locale.
 - `admin.listSearchableFields: ['searchText']`. The stock search box then finds a work by either title, whatever language the admin is in.
 
 Empty state: "No artworks yet" + New artwork.

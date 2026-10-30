@@ -9,7 +9,7 @@ Payload localization: locales `ja`, `en`; default `ja`; fallback on (see 03 for 
 | Field | Type | Notes |
 | --- | --- | --- |
 | `id` | number (auto) | **Used as the URL slug**: `/works/12`. Permanent: never changes, never reused — see Permanent links below |
-| `live` | checkbox | The artist's toggle — what they *want* |
+| `live` | checkbox | The artist's toggle — what they *want*. Only the artist changes it; no hook ever unticks it |
 | `status` | select, read-only | Computed on save: `live` / `hidden` / `incomplete` |
 | `missing` | text list, read-only | Computed on save, e.g. `["smell", "feeling", "mainImage"]` |
 | `sight` `smell` `taste` `touch` `hearing` | select: `a` / `b` | Words come from i18n (`quiz.sight.a` = "nature"…) |
@@ -40,8 +40,9 @@ status   = !live            → hidden
 ```
 
 - Only `status = live` works appear on the public site and in matching.
-- The required list is one array in code. Changing what is required means editing that array and re-saving.
-- Deleting a `media` file that is used as a `mainImage` is **blocked** with a message, so a status can never go stale.
+- The required list is one array in code (`src/config/artworks.ts`, `REQUIRED_FIELDS`); the rule is `computeStatus` in `src/lib/artwork-status.ts`. Changing what is required means editing that array and re-saving.
+- The hook runs on the **whole** work (stored document + the change), so a save that only flips Live still sees every other field.
+- **Deleting an image is always allowed — Decided (2026-10-30).** A work that used it as its main image comes off the site: a `beforeDelete` hook on `media` notes which works use it, and an `afterDelete` hook re-saves each with no main image, so it becomes `incomplete` with `mainImage` missing. **Live stays ticked**, so choosing a new main image puts the work straight back, the same as when any other required field is cleared. (The database empties the field by itself — `main_image_id … ON DELETE set null` — but that alone wouldn't recompute the stored status.) Extra images need nothing: the database drops a deleted image from the list, and they don't affect status. Code: `src/hooks/media.ts`.
 
 ### Permanent links — Decided
 
@@ -67,12 +68,19 @@ The artist and the design call these **collections**. In code the slug is `serie
 
 | Field | Type | Notes |
 | --- | --- | --- |
-| `name` | text, **loc** | |
-| `slug` | text, unique | Auto from the name; for the future collection graphic |
+| `nameJa` | text, required | Japanese name |
+| `nameEn` | text, required | English name |
+| `slug` | text, unique, read-only | From `nameEn`; for the future collection graphic |
 
 Not shown on the public site in v1 (the graphic is paused). Built now so the data is ready.
 
-**In the repo (2026-10-30):** `src/collections/Series.ts` and `src/collections/Artworks.ts`, migration `20261030_155951_collections` (both main tables `AUTOINCREMENT`; checked by `tests/int/artworks-ids.int.spec.ts`). `missing` is a Payload `text` field with `hasMany` (stored in `artworks_texts`). The six select fields store the keys from `src/config/quiz.ts`; their admin labels are read from `quiz.*` in `ja.json`/`en.json` (`src/i18n/admin-labels.ts`). Hooks for `status`, `missing`, `searchText` and the series slug are the next chunk.
+**Two required names, not one localized field — Decided (2026-10-30).** Both names must be given when a collection is added, including from the picker on a work. Payload's form shows one language at a time, so a localized `name` couldn't require both at once; two plain fields can. The public site will pick `nameJa` / `nameEn` by language. The admin shows collections by `nameJa` (`useAsTitle`); the list search covers both names.
+
+**Slug — Decided (2026-10-30):** made from the English name by `slugify` (`src/lib/slug.ts`): lower-case, accents dropped, anything else that isn't a–z or 0–9 becomes `-` ("Night Garden (II)" → `night-garden-ii`); `collection` if nothing is left. A clash gets `-2`, `-3`…. It **follows the English name** on every save (`src/hooks/series.ts`), since nothing links to it yet. When the graphic ships and slugs appear in URLs, decide whether to freeze them like work ids.
+
+**In the repo (2026-10-30):** `src/collections/Series.ts` and `src/collections/Artworks.ts`, migration `20261030_182139_collections` (both main tables `AUTOINCREMENT`; checked by `tests/int/artworks-ids.int.spec.ts`). `missing` is a Payload `text` field with `hasMany` (stored in `artworks_texts`). The six select fields store the keys from `src/config/quiz.ts`; their admin labels are read from `quiz.*` in `ja.json`/`en.json` (`src/i18n/admin-labels.ts`). The migration was regenerated (first generated as `20261030_155951_collections`) when `series.name` became `nameJa` / `nameEn` (it had never reached the real D1).
+
+**Hooks in the repo (2026-10-30):** `src/hooks/artworks.ts` (status, missing, searchText), `src/hooks/media.ts` (main image delete), `src/hooks/series.ts` (slug). Unit tests for the pure functions; `tests/int/hooks.int.spec.ts` checks each hook against the local database.
 
 ## `media` (artwork images)
 
@@ -85,7 +93,7 @@ Payload upload collection, stored in R2 under `media/`.
 
 - Accepted: JPG, PNG, WebP. Max 20MB (Proposed).
 - No `sharp` resizing — sizes are made by the Images binding at upload and stored under `derived/` (05).
-- No alt field — alt text is generated (05). (The template's required `alt` was dropped in migration `20261030_155951_collections`.)
+- No alt field — alt text is generated (05). (The template's required `alt` was dropped in migration `20261030_182139_collections`.)
 - **Read access: logged-in admins only.** The template allowed anyone, which let `/api/media/file/<name>` serve full-resolution originals (05, Privacy). Public pages use Payload's local API, which skips access rules, so the site is unaffected.
 - Stored under `media/` via the R2 plugin's `prefix` option, which adds a `prefix` column (default `'media'`).
 

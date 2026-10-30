@@ -66,6 +66,8 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   await db.run(sql`CREATE INDEX \`artworks_rels_series_id_idx\` ON \`artworks_rels\` (\`series_id\`);`)
   await db.run(sql`CREATE TABLE \`series\` (
   	\`id\` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+  	\`name_ja\` text NOT NULL,
+  	\`name_en\` text NOT NULL,
   	\`slug\` text,
   	\`updated_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL,
   	\`created_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL
@@ -74,16 +76,6 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   await db.run(sql`CREATE UNIQUE INDEX \`series_slug_idx\` ON \`series\` (\`slug\`);`)
   await db.run(sql`CREATE INDEX \`series_updated_at_idx\` ON \`series\` (\`updated_at\`);`)
   await db.run(sql`CREATE INDEX \`series_created_at_idx\` ON \`series\` (\`created_at\`);`)
-  await db.run(sql`CREATE TABLE \`series_locales\` (
-  	\`name\` text NOT NULL,
-  	\`id\` integer PRIMARY KEY NOT NULL,
-  	\`_locale\` text NOT NULL,
-  	\`_parent_id\` integer NOT NULL,
-  	FOREIGN KEY (\`_parent_id\`) REFERENCES \`series\`(\`id\`) ON UPDATE no action ON DELETE cascade
-  );
-  `)
-  await db.run(sql`CREATE UNIQUE INDEX \`series_locales_locale_parent_id_unique\` ON \`series_locales\` (\`_locale\`,\`_parent_id\`);`)
-  await db.run(sql`CREATE INDEX \`series_locales_parent_id_idx\` ON \`series_locales\` (\`_parent_id\`);`)
   await db.run(sql`ALTER TABLE \`media\` ADD \`prefix\` text DEFAULT 'media';`)
   await db.run(sql`ALTER TABLE \`media\` DROP COLUMN \`alt\`;`)
   await db.run(sql`ALTER TABLE \`payload_locked_documents_rels\` ADD \`artworks_id\` integer REFERENCES artworks(id);`)
@@ -98,7 +90,6 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   await db.run(sql`DROP TABLE \`artworks_texts\`;`)
   await db.run(sql`DROP TABLE \`artworks_rels\`;`)
   await db.run(sql`DROP TABLE \`series\`;`)
-  await db.run(sql`DROP TABLE \`series_locales\`;`)
   await db.run(sql`PRAGMA foreign_keys=OFF;`)
   await db.run(sql`CREATE TABLE \`__new_payload_locked_documents_rels\` (
   	\`id\` integer PRIMARY KEY NOT NULL,
