@@ -18,9 +18,13 @@ Public pages are cached as finished HTML, **one copy per language**, and cleared
 
 | Part | Choice | Bindings |
 | --- | --- | --- |
-| Incremental cache (page HTML + data) | R2: `r2IncrementalCache` | `NEXT_INC_CACHE_R2_BUCKET` → **the same bucket** as the originals, under `incremental-cache/` (OpenNext's default prefix). `WORKER_SELF_REFERENCE` |
+| Incremental cache (page HTML + data) | R2: `r2IncrementalCache` | `NEXT_INC_CACHE_R2_BUCKET` → **the same bucket** as the originals, under `incremental-cache/` (OpenNext's default prefix) |
 | Tag cache (on-demand clearing) | D1: `d1NextTagCache` | `NEXT_TAG_CACHE_D1` → **the same database** as Payload; one `revalidations` table (02) |
-| Queue | **None** — only needed for time-based revalidation, which nothing uses | — |
+| Queue | **None** — only needed for time-based revalidation, which nothing uses | — (so no `WORKER_SELF_REFERENCE`, see 01) |
+
+- **In the repo (2026-10-29):** `open-next.config.ts` sets exactly these two (`incrementalCache: r2IncrementalCache`, `tagCache: d1NextTagCache`).
+- **`revalidations` is created by the deploy**, not by a migration: `opennextjs-cloudflare deploy` (and `preview`) runs `CREATE TABLE IF NOT EXISTS revalidations …` through `NEXT_TAG_CACHE_D1` while populating the cache.
+- **Without a queue, a page must never become "stale".** If one did, OpenNext would try the (missing) queue, log an error and keep serving the old copy until the next save. Pages never go stale here: `revalidate = false`, and saves use `revalidateTag(tag, { expire: 0 })`, which makes the page a miss, not stale. The Phase 0 page-cache check confirms a save → next visit shows the new page.
 
 No extra buckets or databases: the cache is two extra bindings to what already exists, and OpenNext manages its own contents. To reset the cache, delete the `incremental-cache/` prefix.
 

@@ -51,14 +51,19 @@ CLOUDFLARE_ACCOUNT_ID=<id> scripts/setup-cloudflare.sh
 | `R2` | R2 binding | Image originals (artworks and globe photos) |
 | `NEXT_INC_CACHE_R2_BUCKET` | R2 binding → same bucket as `R2` | OpenNext page/data cache, under `incremental-cache/` (08) |
 | `NEXT_TAG_CACHE_D1` | D1 binding → same database as `D1` | OpenNext tag cache, `revalidations` table (08) |
-| `WORKER_SELF_REFERENCE` | Service binding to this Worker | Required by OpenNext's R2 cache |
+| ~~`WORKER_SELF_REFERENCE`~~ | Service binding to this Worker | **Not used.** Checked in OpenNext 1.20.13: the R2 cache doesn't need it; only OpenNext's queues (time-based revalidation) and Pages Router `res.revalidate` do, and this site uses neither (08). Left commented out in `wrangler.jsonc` |
 | `IMAGES` | Images binding | Makes the named sizes at upload (05) |
+| `ASSETS` | Static assets | From the template; serves `.open-next/assets` |
 | `PAYLOAD_SECRET` | secret | Payload auth/session signing |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | secret | Read by `seed-admin` only |
 | `TURNSTILE_SITE_KEY` | var | Public key for the upload form |
 | `TURNSTILE_SECRET_KEY` | secret | Server-side token check |
 | `IP_HASH_SALT` | secret | Salt for hashing IPs and visitor cookie ids in `upload_attempts` (06) |
 | `INSTAGRAM_HANDLE` | var | Artist's handle for DM and profile links |
+
+- The binding rows above are in `wrangler.jsonc` (2026-10-29). After changing bindings, run `pnpm generate:types:cloudflare` to refresh `cloudflare-env.d.ts`.
+- `D1` and `NEXT_TAG_CACHE_D1` both have `"remote": true` (so `deploy:database` and `pnpm preview` reach the real database); `R2` and `NEXT_INC_CACHE_R2_BUCKET` don't. Settle this before relying on `pnpm preview`: as is, preview would read the real database but a local bucket.
+- `next build` also connects to the real D1: under the build, `payload.config.ts` sees `NODE_ENV=production` and asks wrangler for remote bindings. It only reads; nothing is pushed in production.
 
 ## Admin login — Decided
 
@@ -88,5 +93,6 @@ CLOUDFLARE_ACCOUNT_ID=<id> scripts/setup-cloudflare.sh
   - R2: uploaded files kept on disk under `r2/`, with a small SQLite index.
   - Nothing touches Cloudflare. Delete `.wrangler/state` to start from an empty database and bucket.
 - In dev, Payload's **push** mode builds the local tables straight from the collection code (no migration files). Migrations are created with `payload migrate:create` when a feature is done and only run against the real D1. Don't run `payload migrate` against the pushed local database (Payload warns; data loss).
+- Push compares the whole local database with the collection code, and the D1 adapter (3.92) has no option to exclude tables. So it may offer to drop tables Payload doesn't own if they exist locally: `revalidations` (08), later `cities` and `upload_attempts` (02). Local copy only; answer no, or recreate them. The real D1 is never pushed.
 - `pnpm dev` does **not** exercise the Worker runtime or OpenNext's page cache. For those, use `pnpm preview` (builds with OpenNext and runs it in the local Workers runtime) or deploy to `workers.dev`.
 - Local secret for dev: set `PAYLOAD_SECRET` in `.env` (gitignored; copy `.env.example`).

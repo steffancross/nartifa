@@ -25,8 +25,16 @@
       "database_name": "nartifa",
       "remote": true,
     },
+    // OpenNext's tag cache: a second binding to the same database (Build Spec 08)
+    {
+      "binding": "NEXT_TAG_CACHE_D1",
+      "database_id": "b25a6db9-b6b4-4886-9aaf-f8f17c5b194b",
+      "database_name": "nartifa",
+      "remote": true,
+    },
   ],
   "services": [
+    // Only needed for an OpenNext queue, which this site doesn't use (Build Spec 01)
     // The service should match the "name" of your worker
     // {
     //   "binding": "WORKER_SELF_REFERENCE",
@@ -38,10 +46,14 @@
       "binding": "R2",
       "bucket_name": "nartifa",
     },
-    // Create a R2 binding with the binding name "NEXT_INC_CACHE_R2_BUCKET"
-    // {
-    //   "binding": "NEXT_INC_CACHE_R2_BUCKET",
-    //   "bucket_name": "<BUCKET_NAME>",
-    // },
+    // OpenNext's page cache: a second binding to the same bucket, under incremental-cache/ (Build Spec 08)
+    {
+      "binding": "NEXT_INC_CACHE_R2_BUCKET",
+      "bucket_name": "nartifa",
+    },
   ],
+  // Makes the named image sizes at upload (Build Spec 05)
+  "images": {
+    "binding": "IMAGES",
+  },
 }
