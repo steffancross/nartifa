@@ -1,24 +1,38 @@
 // Creates an admin account, or resets its password if the email already exists (Build Spec 01).
 // One account per person (Steffan, the artist): run it once for each. See docs/Admin Accounts.md.
 //
-//   ADMIN_EMAIL=… ADMIN_PASSWORD=… pnpm seed-admin          local database (.wrangler/state)
-//   ADMIN_EMAIL=… ADMIN_PASSWORD=… pnpm seed-admin:remote   real D1
+//   pnpm seed-admin          local database (.wrangler/state)
+//   pnpm seed-admin:remote   real D1
 //
-// Never deletes an account and never touches other accounts.
+// Asks for the email and password. Never deletes an account and never touches other accounts.
+import { stdin, stdout } from 'node:process'
+import readline from 'node:readline'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 
 const MIN_PASSWORD_LENGTH = 12
 
-const email = process.env.ADMIN_EMAIL?.trim().toLowerCase()
-const password = process.env.ADMIN_PASSWORD
+// Ask before Payload starts, so its log lines don't land in the middle of the prompts.
+// Reads through the line iterator, which buffers, so piped input can't skip a prompt
+const rl = readline.createInterface({ input: stdin, output: stdout })
+const lines = rl[Symbol.asyncIterator]()
+const ask = async (prompt: string) => {
+  // setPrompt, so readline redraws the right label after a backspace
+  rl.setPrompt(prompt)
+  rl.prompt()
+  const { value } = await lines.next()
+  return (value ?? '') as string
+}
+const email = (await ask('Email: ')).trim().toLowerCase()
+const password = await ask('Password: ')
+rl.close()
 
 if (!email || !password) {
-  console.error('Set ADMIN_EMAIL and ADMIN_PASSWORD.')
+  console.error('Email and password are both needed.')
   process.exit(1)
 }
 if (password.length < MIN_PASSWORD_LENGTH) {
-  console.error(`ADMIN_PASSWORD must be at least ${MIN_PASSWORD_LENGTH} characters.`)
+  console.error(`The password must be at least ${MIN_PASSWORD_LENGTH} characters.`)
   process.exit(1)
 }
 

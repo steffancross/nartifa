@@ -54,7 +54,7 @@ Starting point: Payload's official Cloudflare template (Worker + D1 + R2 already
 
 | Package | `v3.92.1` template pins | Repo uses | Why it differs |
 | --- | --- | --- | --- |
-| `payload`, `@payloadcms/*` | 3.92.0 | **3.92.1** | Latest 3.x. All `@payloadcms/*` packages on the same version |
+| `payload`, `@payloadcms/*` | 3.92.0 | **3.92.1** | Latest 3.x. All `@payloadcms/*` packages on the same version. **Admin login is broken on Workers in 3.90–3.92.1** (see 01, Admin login): upgrade to the first 3.x release with `auth.passwordHashIterations` |
 | `next` | 16.3.3 | **16.4.2** | OpenNext 1.20.13 requires `next >=16.4.1`. Payload 3.92 supports `>=16.3.3 <17`. Next 16 decides the API choices below |
 | `@opennextjs/cloudflare` | 1.20.1 | **`^1.20.13`** | `>=1.20.3` is the first version that supports `proxy.ts` (03) |
 | `wrangler` | `~4.116.0` | **`^4.154.0`** | Current OpenNext requires `^4.148.0` |
@@ -121,7 +121,7 @@ scripts/
   setup-cloudflare.sh  creates the D1 database and R2 bucket in APAC (01)
   import-geonames.ts   loads the city list into D1
   build-globe-texture.ts  draws land onto the sphere texture
-  seed-admin.ts        creates an admin account / resets its password from env vars (docs/Admin Accounts.md)
+  seed-admin.ts        creates an admin account / resets its password; prompts for both (docs/Admin Accounts.md)
 ```
 
 ## Changes made during the build discussion

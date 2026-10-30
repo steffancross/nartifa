@@ -24,20 +24,7 @@ export CLOUDFLARE_ACCOUNT_ID=685bd7f1b321e359e1dd1cd02913d680
 
 That id is Steffan's account. At go-live, use the artist's account id; it must match `account_id` in `wrangler.jsonc`.
 
-### Typing the password safely
-
-`seed-admin` reads the email and password from environment variables. Typing the password into a command leaves it in your shell history, so read it without echoing instead (zsh):
-
-```bash
-export ADMIN_EMAIL=someone@example.com
-read -rs "ADMIN_PASSWORD?Password: "; export ADMIN_PASSWORD; echo
-```
-
-Passwords must be at least 12 characters. When you're done:
-
-```bash
-unset ADMIN_EMAIL ADMIN_PASSWORD
-```
+`export` only lasts for that terminal tab. In a new tab, run it again.
 
 ## Create an account
 
@@ -49,7 +36,7 @@ unset ADMIN_EMAIL ADMIN_PASSWORD
 pnpm seed-admin:remote
 ```
 
-With `ADMIN_EMAIL` and `ADMIN_PASSWORD` set as above, this creates the account in the real database. Run it once per person.
+It asks for the email and password (at least 12 characters) and creates the account in the real database. Run it once per person. Emails are stored lower-case, so `Name@Example.com` and `name@example.com` are the same account.
 
 `pnpm seed-admin` (without `:remote`) does the same in the local development database (`pnpm dev`).
 
@@ -59,7 +46,7 @@ With `ADMIN_EMAIL` and `ADMIN_PASSWORD` set as above, this creates the account i
 | --- | --- |
 | You can log in and want a new password | Open your account (account icon in the admin, or `/admin/account`) → Change Password → save |
 | Someone forgot their password, and someone else can log in | The other person opens Users → that account → sets a new password → saves, then sends it privately |
-| Nobody can log in, or the account is locked | Set `ADMIN_EMAIL` to that account's email and a new `ADMIN_PASSWORD`, then run `pnpm seed-admin:remote` |
+| Nobody can log in, or the account is locked | Run `pnpm seed-admin:remote`, enter that account's email and a new password |
 
 `seed-admin` resets the password when the email already exists, and also clears a lockout from wrong passwords. It never creates a second account for the same email, and never touches other accounts.
 
@@ -80,4 +67,8 @@ The order matters. While the database has **no accounts**, Payload's `/admin` sh
 5. Set the Worker's secrets `PAYLOAD_SECRET` and `IP_HASH_SALT`, each a fresh `openssl rand -hex 32` value. In the dashboard: Workers & Pages → `nartifa` → Settings → Variables and Secrets → Add, type **Secret** (a Text variable would be wiped by the next deploy). Or by CLI: `openssl rand -hex 32 | pnpm exec wrangler secret put PAYLOAD_SECRET`. Until `PAYLOAD_SECRET` is set, the admin doesn't work. Details: *Build Spec 01, Deploy*.
 6. Open `/admin` on the new address and log in with both accounts.
 
-Status: steps 2–6 have not been run yet on Steffan's account (first deploy is the next chunk of Phase 0). Update this section if anything differs when they are.
+Status on Steffan's account (2026-10-30): steps 1–5 done (one account, Steffan's). Step 6 is **blocked**: logins on the Worker fail with "incorrect password" in Payload 3.90–3.92.1, because Cloudflare refuses Payload's password hashing (600,000 PBKDF2 iterations; the cap is 100,000). Fix once Payload releases it: upgrade, set `auth: { passwordHashIterations: 100000 }` in `payload.config.ts`, then reset each account with `seed-admin:remote`. Details: *Build Spec 01, Blocker: password hashing on Workers*.
+
+Two things learned on the first deploy:
+- The build copies the local `.env` into the Worker, so until the dashboard secrets exist the Worker runs on the local `PAYLOAD_SECRET`. Set the secrets right after step 4.
+- `/admin/create-first-user` still loads once an account exists, but Payload refuses to register anyone (403), so it's harmless.

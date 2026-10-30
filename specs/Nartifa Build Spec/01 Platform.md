@@ -55,7 +55,6 @@ CLOUDFLARE_ACCOUNT_ID=<id> scripts/setup-cloudflare.sh
 | `IMAGES` | Images binding | Makes the named sizes at upload (05) |
 | `ASSETS` | Static assets | From the template; serves `.open-next/assets` |
 | `PAYLOAD_SECRET` | secret | Payload auth/session signing |
-| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | **local env only** | Read by `seed-admin`, which runs on Steffan's machine. Set in the shell when running it; never uploaded to the Worker (docs/Admin Accounts.md) |
 | `TURNSTILE_SITE_KEY` | var | Public key for the upload form |
 | `TURNSTILE_SECRET_KEY` | secret | Server-side token check |
 | `IP_HASH_SALT` | secret | Salt for hashing IPs and visitor cookie ids in `upload_attempts` (06) |
@@ -72,8 +71,18 @@ CLOUDFLARE_ACCOUNT_ID=<id> scripts/setup-cloudflare.sh
 - Payload's built-in auth with a `users` collection holding **one account per person: Steffan and the artist** (changed 2026-10-29 from one shared account).
 - No roles: every account can do everything (Payload's default access is "any logged-in user"). No change history, no email adapter.
 - "Forgot password" is turned off. Without an email adapter Payload only logs "Email attempted without being configured" (address and subject); no reset link is sent or logged (checked in 3.92.1).
-- **Create / reset:** in the admin (Users, or the account page), or with `scripts/seed-admin.ts`. It creates the account for `ADMIN_EMAIL`, or resets its password and clears a lockout if it exists; it never touches other accounts. `pnpm seed-admin` targets the local database, `pnpm seed-admin:remote` the real D1. Step-by-step: **docs/Admin Accounts.md**.
+- **Create / reset:** in the admin (Users, or the account page), or with `scripts/seed-admin.ts`. It asks for an email and password (min. 12 characters; email stored lower-case), then creates that account, or resets its password and clears a lockout if it exists; it never touches other accounts. Nothing about the accounts is stored in env vars or uploaded to the Worker. `pnpm seed-admin` targets the local database, `pnpm seed-admin:remote` the real D1. Step-by-step: **docs/Admin Accounts.md**.
 - Payload defaults kept: login lasts 2 hours; 5 wrong passwords lock the account for 10 minutes.
+
+### Blocker: password hashing on Workers (found 2026-10-30)
+
+**Login on the deployed Worker fails with "incorrect password" in Payload 3.90.0–3.92.1.** Payload 3.90 raised password hashing (PBKDF2-SHA256) from 25,000 to 600,000 iterations. Cloudflare's production runtime refuses PBKDF2 above 100,000 (`Pbkdf2 failed: iteration counts above 100000 are not supported`); Payload's password check catches that error and treats it as a wrong password, counting a failed attempt. The local Workers runtime doesn't enforce the cap, so every local test passes.
+
+- Confirmed: the stored hash matched the typed password; PBKDF2 at 600,000 failed in a `wrangler dev --remote` test on Cloudflare; the same deployed build logged in fine in the local runtime.
+- Upstream: [payloadcms/payload#18274](https://github.com/payloadcms/payload/issues/18274). Fixed by #19070 (main) and #19074 (3.x), merged 2026-10-29, **not in a release yet** (3.92.1 was published 2026-10-27).
+- The fix adds `auth: { passwordHashIterations: 100000 }` to the root Payload config (allowed: `100000` or `600000`, default `600000`). Workers projects set `100000`.
+- **Decision: wait for the release; no `pnpm patch`.** Then: upgrade all `@payloadcms/*`, set `auth.passwordHashIterations: 100000` in `payload.config.ts`, and reset every account with `seed-admin:remote` (a 100k environment can't verify existing 600k hashes). Also affects creating accounts and changing passwords in the live admin.
+- Until then, work that doesn't need a live admin login carries on (Structure). `seed-admin` and `pnpm dev` are unaffected (Node).
 - Admin interface language: **switchable EN/JA** in the account settings, per account. Default to Japanese after launch.
 
 ## Domain
@@ -92,6 +101,7 @@ CLOUDFLARE_ACCOUNT_ID=<id> scripts/setup-cloudflare.sh
 - Secrets are set after the first `deploy:app` (the Worker must exist). Each value is `openssl rand -hex 32` (64 hex characters), used only there. Two ways:
   - **Dashboard:** Workers & Pages → `nartifa` → Settings → Variables and Secrets → Add, type **Secret** (not Text: plain-text variables added in the dashboard are deleted by the next deploy; secrets are kept). Generate the value in a terminal, paste it, save, then clear the terminal.
   - **CLI**, piped so the value is never shown or saved: `openssl rand -hex 32 | pnpm exec wrangler secret put PAYLOAD_SECRET`.
+  - **OpenNext copies the local `.env` into the deployed Worker** (`.open-next/cloudflare/next-env.mjs`, from `.env`, `.env.{mode}`, `.env.local`, `.env.{mode}.local`). Found on the first deploy (2026-10-30): with no secrets set yet, the Worker ran on the local dev `PAYLOAD_SECRET`. Cloudflare secrets take precedence (OpenNext only fills names the Worker doesn't already have), so the dashboard secret replaces it. Rule: `.env` holds local-dev values only, never anything production needs to keep private.
   - `pnpm exec wrangler secret list` shows which are set (names only). Changing `PAYLOAD_SECRET` later logs everyone out; changing `IP_HASH_SALT` resets rate-limit counts.
 - Bundle baseline (template + Payload + Lexical, 2026-10-29): **3.68 MB gzipped** (16.0 MB raw), limit 10 MB.
 
