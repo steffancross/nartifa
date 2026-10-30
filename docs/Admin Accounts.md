@@ -77,7 +77,7 @@ The order matters. While the database has **no accounts**, Payload's `/admin` sh
 2. `pnpm run deploy:database`: creates Payload's tables in the new database.
 3. `pnpm seed-admin:remote`: once for Steffan, once for the artist.
 4. `pnpm run deploy:app`: builds and deploys the site. (Plain `pnpm run deploy` runs steps 2 and 4 together, which is fine for every deploy after the first.)
-5. Set the Worker's secrets (*Build Spec 01, Bindings and secrets*). Until `PAYLOAD_SECRET` is set, the admin doesn't work.
+5. Set the Worker's secrets `PAYLOAD_SECRET` and `IP_HASH_SALT`, each a fresh `openssl rand -hex 32` value. In the dashboard: Workers & Pages → `nartifa` → Settings → Variables and Secrets → Add, type **Secret** (a Text variable would be wiped by the next deploy). Or by CLI: `openssl rand -hex 32 | pnpm exec wrangler secret put PAYLOAD_SECRET`. Until `PAYLOAD_SECRET` is set, the admin doesn't work. Details: *Build Spec 01, Deploy*.
 6. Open `/admin` on the new address and log in with both accounts.
 
 Status: steps 2–6 have not been run yet on Steffan's account (first deploy is the next chunk of Phase 0). Update this section if anything differs when they are.

@@ -46,14 +46,18 @@
     // },
   ],
   "r2_buckets": [
+    // "remote": true, like the D1 bindings: CLI commands run with NODE_ENV=production (seed-admin:remote,
+    // deploy:database) reach the real bucket. pnpm dev stays local either way (Build Spec 01)
     {
       "binding": "R2",
       "bucket_name": "nartifa",
+      "remote": true,
     },
     // OpenNext's page cache: a second binding to the same bucket, under incremental-cache/ (Build Spec 08)
     {
       "binding": "NEXT_INC_CACHE_R2_BUCKET",
       "bucket_name": "nartifa",
+      "remote": true,
     },
   ],
   // Makes the named image sizes at upload (Build Spec 05)

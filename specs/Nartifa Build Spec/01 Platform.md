@@ -61,9 +61,9 @@ CLOUDFLARE_ACCOUNT_ID=<id> scripts/setup-cloudflare.sh
 | `IP_HASH_SALT` | secret | Salt for hashing IPs and visitor cookie ids in `upload_attempts` (06) |
 | `INSTAGRAM_HANDLE` | var | Artist's handle for DM and profile links |
 
-- The binding rows above are in `wrangler.jsonc` (2026-10-29). After changing bindings, run `pnpm generate:types:cloudflare` to refresh `cloudflare-env.d.ts`.
-- `D1` and `NEXT_TAG_CACHE_D1` both have `"remote": true`, so CLI commands run with `NODE_ENV=production` (`deploy:database`, `seed-admin:remote`) reach the real database. `R2` and `NEXT_INC_CACHE_R2_BUCKET` don't.
-- **`pnpm preview` is not used.** It would mix real and local data: OpenNext creates `revalidations` in the *local* database, then wrangler's dev server connects the D1 bindings to the *real* one (and R2 stays local). With one environment, `workers.dev` is the test bed for anything Worker-specific.
+- The binding rows above are in `wrangler.jsonc` (2026-10-29). After changing bindings, run `pnpm generate:types:cloudflare` to refresh `cloudflare-env.d.ts`. If `.open-next/` exists (after a build), wrangler also adds a `GlobalProps` block importing `./.open-next/worker`; remove it (or delete `.open-next/` first), since that folder is gitignored and a fresh clone wouldn't type-check.
+- All four D1/R2 bindings have `"remote": true` (R2 added 2026-10-29), so CLI commands run with `NODE_ENV=production` (`deploy:database`, `seed-admin:remote`, `next build`) reach the real database **and** bucket. `pnpm dev` ignores the flag and stays fully local.
+- **`pnpm preview` is not used.** It would mix real and local data: OpenNext creates `revalidations` in the *local* database, then wrangler's dev server connects the bindings to the *real* database and bucket. With one environment, `workers.dev` is the test bed for anything Worker-specific.
 - Workers logs are on via `"observability": { "enabled": true }` in `wrangler.jsonc` (08).
 - `next build` also connects to the real D1: under the build, `payload.config.ts` sees `NODE_ENV=production` and asks wrangler for remote bindings. It only reads; nothing is pushed in production.
 
@@ -89,7 +89,10 @@ CLOUDFLARE_ACCOUNT_ID=<id> scripts/setup-cloudflare.sh
 - The `cities` table has its own SQL migration (it is outside Payload — see 02).
 - `pnpm run deploy:database` runs `payload migrate` from your machine with `NODE_ENV=production`, which makes `payload.config.ts` connect to the **real** D1 (the binding has `"remote": true`). Migrations reach Cloudflare only this way.
 - **First deploy to a new account is done step by step**, not with `pnpm run deploy`: migrate → `seed-admin:remote` for each person → `deploy:app` → secrets. While `users` is empty, `/admin` shows Payload's "Create first user" form to anyone, so the accounts must exist before the app is live. Full order in docs/Admin Accounts.md.
-- Secrets are set after the first `deploy:app` (`wrangler secret put` needs the Worker to exist), by piping a generated value so it is never shown or saved: `openssl rand -hex 32 | pnpm exec wrangler secret put PAYLOAD_SECRET`.
+- Secrets are set after the first `deploy:app` (the Worker must exist). Each value is `openssl rand -hex 32` (64 hex characters), used only there. Two ways:
+  - **Dashboard:** Workers & Pages → `nartifa` → Settings → Variables and Secrets → Add, type **Secret** (not Text: plain-text variables added in the dashboard are deleted by the next deploy; secrets are kept). Generate the value in a terminal, paste it, save, then clear the terminal.
+  - **CLI**, piped so the value is never shown or saved: `openssl rand -hex 32 | pnpm exec wrangler secret put PAYLOAD_SECRET`.
+  - `pnpm exec wrangler secret list` shows which are set (names only). Changing `PAYLOAD_SECRET` later logs everyone out; changing `IP_HASH_SALT` resets rate-limit counts.
 - Bundle baseline (template + Payload + Lexical, 2026-10-29): **3.68 MB gzipped** (16.0 MB raw), limit 10 MB.
 
 ## Local development
