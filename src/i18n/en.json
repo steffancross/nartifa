@@ -1,0 +1,16 @@
+{
+  "meta": {
+    "title": "NARTIFA"
+  },
+  "landing": {
+    "heading": "NARTIFA",
+    "placeholder": "The landing page goes here (placeholder)"
+  },
+  "language": {
+    "switchTo": "日本語"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "home": "Back to the start"
+  }
+}

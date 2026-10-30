@@ -105,9 +105,13 @@ src/
     quiz.ts            steps, option keys, icon file names, feeling weight
     images.ts          named sizes
     limits.ts          upload limits, rate limits, queue cap
+  components/          shared site components (LanguageToggle for now)
   proxy.ts             language choice → next-intl rewrite (03). Next 16's name for middleware
   i18n/
     routing.ts         next-intl routing (localePrefix 'never', cookie)
+    navigation.ts      next-intl Link / redirect / useRouter / usePathname — use these, never next/link
+    request.ts         loads ja.json / en.json (English falls back to Japanese per key)
+    accept-language.ts first Accept-Language entry → ja / en (unit tested)
     ja.json  en.json   all fixed interface strings (incl. quiz words, About text)
   lib/
     data.ts            ALL public reads: Payload local API wrapped in unstable_cache + tags (08)
@@ -117,6 +121,10 @@ src/
     i18n.ts            pick() / langOf() for artwork field fallback (03)
     reveal.ts          in-memory reveal flag set by the quiz (03)
   globe/               three.js scene, picking, controls
+tests/
+  unit/                Vitest, pure logic (pnpm test:unit)
+  int/                 Vitest, Payload local API against the local database (pnpm test:int runs unit + int)
+  e2e/                 Playwright against pnpm dev (pnpm test:e2e)
 scripts/
   setup-cloudflare.sh  creates the D1 database and R2 bucket in APAC (01)
   import-geonames.ts   loads the city list into D1

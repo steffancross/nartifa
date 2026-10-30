@@ -6,6 +6,21 @@ The checklist covers what to do; the specs cover how. References: **B** = *Narti
 
 ---
 
+## Waiting on upstream releases
+
+Two bugs in dependencies, both fixed upstream but not released yet (found 2026-10-30). Check at the start of each work session; **Phase 0 can't be ticked off until both are done.**
+
+- [ ] **Payload: admin login on Workers** (B01, Blocker). Fixed by payloadcms/payload #19074 (3.x), merged 2026-10-29.
+  - Check: `npm view payload version`. Waiting for anything newer than **3.92.1**; confirm its release notes mention `auth.passwordHashIterations`.
+  - Then: upgrade `payload` and every `@payloadcms/*` to that version → add `auth: { passwordHashIterations: 100000 }` to `payload.config.ts` → deploy → reset every account with `pnpm seed-admin:remote` → log in at `/admin` on workers.dev.
+  - Unblocks: the `seed-admin` / login line below, the page-cache "admin save clears it" check, the ids recheck on the real D1, the admin tweaks, and Phase 1's artist login.
+- [ ] **OpenNext: cached pages always read STALE** (B08, Known issue). Fixed by opennextjs/opennextjs-aws #1317, merged 2026-10-29.
+  - Check: `npm view @opennextjs/aws version` (waiting for newer than **4.1.13**) **and** `npm view @opennextjs/cloudflare dependencies` (waiting for a release whose `@opennextjs/aws` is that newer version; it pins it exactly, so both have to ship).
+  - Then: upgrade `@opennextjs/cloudflare` → `pnpm run deploy:app` → visit `/` twice in each language: the second visit must say `x-nextjs-cache: HIT`, and `wrangler tail` must show no "Failed to revalidate stale page".
+  - Unblocks: the page-cache Verify line below.
+
+---
+
 ## Phase 0 — Foundation and early checks
 
 The risky assumptions get proven here. If one fails, update the spec before moving on.
@@ -23,19 +38,19 @@ The risky assumptions get proven here. If one fails, update the spec before movi
 - [ ] `seed-admin` script; admin login works (B01) — script done (prompts for email/password); Steffan's account created on the real D1 (2026-10-30). **Login on the Worker blocked** by Payload's 600k PBKDF2 vs the Workers 100k cap (B01 Blocker): upgrade to the next Payload 3.x release, set `auth.passwordHashIterations: 100000`, reset the account, log in. Artist account later
 
 **Structure**
-- [ ] Repo layout per B00: `app/(site)/[locale]/`, `(payload)/`, `api/site/`, `img/`, `config/`, `lib/`
+- [ ] Repo layout per B00: `app/(site)/[locale]/`, `(payload)/`, `api/site/`, `img/`, `config/`, `lib/` — `(site)/[locale]/` and `(payload)/` done (template demo `(frontend)` removed); the rest appear with their first file (`lib/` in the next chunk)
 - [ ] Tokens as CSS variables (public dark + admin light), fonts defined in one place (D00 Tokens, B08)
-- [ ] next-intl routing: `localePrefix: 'never'`, default `ja`, cookie `lang` for 1 year (B03)
-- [ ] `proxy.ts`: first `Accept-Language` entry → `ja`/`en`, then next-intl; matcher skips `/admin`, `/api`, `/img`, `/_next`, files (B03)
-- [ ] `ja.json` / `en.json` with placeholder text
-- [ ] Localized 404s: `[locale]/[...rest]/page.tsx` + `[locale]/not-found.tsx` (B03)
+- [x] next-intl routing: `localePrefix: 'never'`, default `ja`, cookie `lang` for 1 year (B03)
+- [x] `proxy.ts`: first `Accept-Language` entry → `ja`/`en`, then next-intl; matcher skips `/admin`, `/api`, `/img`, `/_next`, files (B03) — unit + e2e tests pass locally (2026-10-30)
+- [x] `ja.json` / `en.json` with placeholder text
+- [x] Localized 404s: `[locale]/[...rest]/page.tsx` + `[locale]/not-found.tsx` (B03) — HTTP 404 in both languages (e2e)
 - [ ] `lib/data.ts` with one `unstable_cache` read tagged `works`; one Payload hook calling `revalidateTag('works', { expire: 0 })` (B08)
 
 **Verify** (B09)
 - [x] Bundle under 10MB compressed — size: 3.68 MB gzipped, confirmed by the first deploy (2026-10-30); recheck after Phase 1
 - [ ] Cold start from Japan — time: ___
-- [ ] Page cache: second visit doesn't call Payload (log it); an admin save clears it; `ja` and `en` cached separately; `revalidations` table created by deploy
-- [ ] `proxy.ts` works on OpenNext (language switches correctly). If not: rename to `middleware.ts`
+- [ ] Page cache: second visit doesn't call Payload (log it); an admin save clears it; `ja` and `en` cached separately; `revalidations` table created by deploy — `revalidations` created (2026-10-30). **First live check failed:** every visit to `/` returns `x-nextjs-cache: STALE` and logs "Failed to revalidate stale page /en — Dummy queue is not implemented". Cause: pages rendered on first visit aren't in the prerender manifest, and Next then assumes revalidate after 1 second unless the same instance rendered them (Workers instances don't share that memory). Known OpenNext bug ([opennextjs-aws#1250](https://github.com/opennextjs/opennextjs-aws/issues/1250)), fixed in #1317, not released yet: upgrade `@opennextjs/cloudflare` when a release includes it, then re-check (B08 Known issue)
+- [x] `proxy.ts` works on OpenNext (language switches correctly). If not: rename to `middleware.ts` — passed on workers.dev 2026-10-30: all language rules, cookie, localized 404s, `/ja` → 307 to `/`, `/admin` and `/api` untouched
 - [x] Ids never reused: create 1–3, delete 3, create one → it gets 4 (on `media` in Phase 0; `artworks` again in Phase 1 — B02) — passed locally 2026-10-28: got 4. Recheck on the real D1 after the first deploy
 - [ ] Images binding works on `workers.dev` (one test transform)
 - [ ] Payload admin can: redirect dashboard → artworks, hide collections from nav, change delete confirm text (B07)

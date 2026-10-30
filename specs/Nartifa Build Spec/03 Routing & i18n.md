@@ -33,6 +33,8 @@ next-intl's own negotiation looks through the whole `Accept-Language` list (`fr,
 
 Middleware `matcher` excludes `/admin`, `/api`, `/img`, `/_next` and files with an extension, so Payload, the image route and site endpoints never pass through it.
 
+**In the repo (2026-10-30):** `src/proxy.ts` replaces the request's `Accept-Language` with the result of `pickLanguage()` (`src/i18n/accept-language.ts`: first entry `ja`/`ja-*` → `ja`, anything else → `en`, none or `*` → `ja`), then calls next-intl's `createMiddleware(routing)` with the rewritten request. The cookie still takes priority inside next-intl. Matcher: `/((?!(?:admin|api|img|_next)(?:/|$)|.*\\..*).*)`. Checked by `tests/unit/accept-language.unit.spec.ts` and `tests/e2e/frontend.e2e.spec.ts`; `next build` lists `ƒ Proxy (Middleware)`.
+
 **Toggle** (menu overlay): writes the `lang` cookie (1 year), then `router.replace(pathname, { locale })` from next-intl's navigation helpers. The page re-renders in place, same URL. `<html lang>` follows the chosen language.
 
 ### Trade-offs accepted
@@ -142,6 +144,7 @@ The flag is **not in the URL**: a query flag would force the page to render on e
 - `proxy.ts` rewrites every public path into `[locale]`, so an unknown path like `/foo` arrives as `/ja/foo`.
 - `app/(site)/[locale]/[...rest]/page.tsx` just calls `notFound()`, and `app/(site)/[locale]/not-found.tsx` renders a plain "Page not found" + link to the landing page, in the same style. HTTP 404.
 - This is next-intl's documented pattern. It keeps every 404 inside the localized layout, so no root-level `not-found.tsx` is needed (which would clash with Payload's separate root layout in `(payload)`).
+- The catch-all is **rendered per request, not cached** (`ƒ` in the build): it has no data, and caching it would let bots probing random paths fill the page cache. The artwork 404 (`works/[slug]`, Phase 2) is the one that is cached and cleared by the `works` tag.
 - Unknown `/api/…` paths are outside the matcher and return Payload's own JSON 404.
 - 404 renders are cached like any page and cleared by the `works` tag, so a work going live appears at once.
 
