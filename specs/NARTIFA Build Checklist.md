@@ -17,10 +17,10 @@ The risky assumptions get proven here. If one fails, update the spec before movi
 - [x] D1 created with `--location=apac`; R2 bucket created with `apac` hint (B01 Location) — by `scripts/setup-cloudflare.sh`; both report APAC (2026-10-29)
 - [x] `autoIncrement: true` in the D1 adapter — **before the first migration**; template migration replaced (B02 Permanent links)
 - [x] Bindings: `D1`, `R2`, `IMAGES`, `NEXT_INC_CACHE_R2_BUCKET` (same bucket), `NEXT_TAG_CACHE_D1` (same database) (B01). `WORKER_SELF_REFERENCE` dropped: only needed for a queue (B01, B08)
-- [ ] Secrets and vars: `PAYLOAD_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `IP_HASH_SALT`, `INSTAGRAM_HANDLE` (Turnstile keys in Phase 5) (B01)
+- [ ] Secrets and vars: `PAYLOAD_SECRET`, `IP_HASH_SALT` as Worker secrets, set after the first `deploy:app`. `ADMIN_EMAIL` / `ADMIN_PASSWORD` are local env only. `INSTAGRAM_HANDLE` when the artwork page needs it; Turnstile keys in Phase 5 (B01)
 - [x] `open-next.config.ts`: R2 incremental cache + D1 tag cache, no queue (B08) — `opennextjs-cloudflare build` passes (2026-10-29); working cache checked under Verify
 - [ ] Deployed to `workers.dev` with `opennextjs-cloudflare deploy`
-- [ ] `seed-admin` script; admin login works (B01)
+- [ ] `seed-admin` script; admin login works (B01) — script done and checked on the local database (2026-10-29: create, reset, lockout cleared). Remaining: run on the real D1 for both accounts and log in
 
 **Structure**
 - [ ] Repo layout per B00: `app/(site)/[locale]/`, `(payload)/`, `api/site/`, `img/`, `config/`, `lib/`
@@ -32,7 +32,7 @@ The risky assumptions get proven here. If one fails, update the spec before movi
 - [ ] `lib/data.ts` with one `unstable_cache` read tagged `works`; one Payload hook calling `revalidateTag('works', { expire: 0 })` (B08)
 
 **Verify** (B09)
-- [ ] Bundle under 10MB compressed — size: ___
+- [ ] Bundle under 10MB compressed — size: 3.68 MB gzipped (template baseline, 2026-10-29); recheck after Phase 1
 - [ ] Cold start from Japan — time: ___
 - [ ] Page cache: second visit doesn't call Payload (log it); an admin save clears it; `ja` and `en` cached separately; `revalidations` table created by deploy
 - [ ] `proxy.ts` works on OpenNext (language switches correctly). If not: rename to `middleware.ts`
@@ -49,7 +49,7 @@ The risky assumptions get proven here. If one fails, update the spec before movi
 - [ ] `artworks` with all fields, incl. `status`, `missing`, `searchText`
 - [ ] `series`, labelled "Collections" / "コレクション"
 - [ ] `media`: R2 under `media/`, JPG/PNG/WebP, `upload.limits.fileSize: 20_000_000` (B05)
-- [ ] `users`: one account, forgot-password off (B01)
+- [ ] `users`: one account per person (Steffan, artist), forgot-password off (B01)
 - [ ] Ids never reused on `artworks`: repeat the Phase 0 test (B02)
 - [ ] Migrations generated and applied
 

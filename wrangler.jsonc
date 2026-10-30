@@ -18,6 +18,10 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS",
   },
+  // Workers logs (Build Spec 08). In config rather than the dashboard so the go-live setup gets it too
+  "observability": {
+    "enabled": true,
+  },
   "d1_databases": [
     {
       "binding": "D1",

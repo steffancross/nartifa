@@ -80,7 +80,7 @@ Description from i18n (Japanese, since crawlers get Japanese). Site-wide default
 
 ## Logs and errors — Decided
 
-- Workers logs only, enabled in the Cloudflare dashboard.
+- Workers logs only, enabled by `"observability": { "enabled": true }` in `wrangler.jsonc` (so the go-live setup gets it too).
 - Use a console-based logger (the template's), since Payload's default logger uses Node APIs that don't work in Workers.
 - Log: failed uploads (reason, not content), Turnstile failures, rate-limit hits, image route errors.
 - Never log IPs, photos or exact coordinates.

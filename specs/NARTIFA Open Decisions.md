@@ -49,7 +49,7 @@ Updated 2026-10-25. Visual details live in *Design Spec/*. Build details live in
 - Colors, type, spacing and motion as in *Design Spec/00 Tokens.md*. Fonts are base fonts and may change.
 
 **Admin**
-- One shared login, no "forgot password" (Steffan resets it). Admin in English or Japanese.
+- One login per person (Steffan, the artist; changed from one shared login on 2026-10-29), no "forgot password" (Steffan resets it). Admin in English or Japanese.
 - Opens on the artworks table. Same table + form pattern for artworks and uploads.
 - Artwork form starts with the CMS's own layout; switches to the 9c layout if it doesn't look good.
 - Review queue: newest first, badge counts everything waiting, decisions save immediately with Undo.

@@ -19,6 +19,7 @@ The design spec says what each page looks like and how it behaves. This spec say
 | 08 Caching & Ops.md | Caching, analytics, fonts, social previews, logs |
 | 09 Build Order.md | Phases, what to verify early, open items |
 | ../NARTIFA Build Checklist.md | The same phases as tick boxes, for tracking progress |
+| ../../docs/Admin Accounts.md | Runbook: creating admin accounts, resetting passwords, first setup on a new Cloudflare account |
 
 ## Status labels
 
@@ -120,7 +121,7 @@ scripts/
   setup-cloudflare.sh  creates the D1 database and R2 bucket in APAC (01)
   import-geonames.ts   loads the city list into D1
   build-globe-texture.ts  draws land onto the sphere texture
-  seed-admin.ts        creates / resets the admin user from env vars
+  seed-admin.ts        creates an admin account / resets its password from env vars (docs/Admin Accounts.md)
 ```
 
 ## Changes made during the build discussion
@@ -139,6 +140,7 @@ The design spec (v1.1) and *NARTIFA Open Decisions.md* have been updated to matc
 | "Ask about this work" pre-fills an Instagram DM | **Verify** whether Instagram supports pre-filled text. Fallback decided when built | 03, 09 |
 | Upload limits / spam — Still open | **Decided** — see 06 | 06 |
 | Ties in matching — Still open | **Decided** — random among top scores | 04 |
+| One shared admin account (9) | **One account per person** (Steffan, the artist), equal rights. Changed 2026-10-29 | 01 |
 
 ## Conventions
 

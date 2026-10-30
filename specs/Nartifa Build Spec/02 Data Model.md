@@ -152,7 +152,7 @@ Print counts at the end (cities, with Japanese name, with region) as a sanity ch
 
 ## `users`
 
-Payload auth collection with one account (see 01).
+Payload auth collection with one account per person: Steffan and the artist (see 01).
 
 ## `revalidations` (plain D1 table, outside Payload)
 

@@ -55,23 +55,26 @@ CLOUDFLARE_ACCOUNT_ID=<id> scripts/setup-cloudflare.sh
 | `IMAGES` | Images binding | Makes the named sizes at upload (05) |
 | `ASSETS` | Static assets | From the template; serves `.open-next/assets` |
 | `PAYLOAD_SECRET` | secret | Payload auth/session signing |
-| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | secret | Read by `seed-admin` only |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | **local env only** | Read by `seed-admin`, which runs on Steffan's machine. Set in the shell when running it; never uploaded to the Worker (docs/Admin Accounts.md) |
 | `TURNSTILE_SITE_KEY` | var | Public key for the upload form |
 | `TURNSTILE_SECRET_KEY` | secret | Server-side token check |
 | `IP_HASH_SALT` | secret | Salt for hashing IPs and visitor cookie ids in `upload_attempts` (06) |
 | `INSTAGRAM_HANDLE` | var | Artist's handle for DM and profile links |
 
 - The binding rows above are in `wrangler.jsonc` (2026-10-29). After changing bindings, run `pnpm generate:types:cloudflare` to refresh `cloudflare-env.d.ts`.
-- `D1` and `NEXT_TAG_CACHE_D1` both have `"remote": true` (so `deploy:database` and `pnpm preview` reach the real database); `R2` and `NEXT_INC_CACHE_R2_BUCKET` don't. Settle this before relying on `pnpm preview`: as is, preview would read the real database but a local bucket.
+- `D1` and `NEXT_TAG_CACHE_D1` both have `"remote": true`, so CLI commands run with `NODE_ENV=production` (`deploy:database`, `seed-admin:remote`) reach the real database. `R2` and `NEXT_INC_CACHE_R2_BUCKET` don't.
+- **`pnpm preview` is not used.** It would mix real and local data: OpenNext creates `revalidations` in the *local* database, then wrangler's dev server connects the D1 bindings to the *real* one (and R2 stays local). With one environment, `workers.dev` is the test bed for anything Worker-specific.
+- Workers logs are on via `"observability": { "enabled": true }` in `wrangler.jsonc` (08).
 - `next build` also connects to the real D1: under the build, `payload.config.ts` sees `NODE_ENV=production` and asks wrangler for remote bindings. It only reads; nothing is pushed in production.
 
 ## Admin login — Decided
 
-- Payload's built-in auth with a `users` collection holding **one shared account**.
-- No roles, no change history, no email adapter.
-- "Forgot password" is turned off.
-- **Reset:** Steffan changes the password in the admin, or sets `ADMIN_PASSWORD` and runs `seed-admin`, which creates or updates the single user.
-- Admin interface language: **switchable EN/JA** in the account settings. With one shared account the setting may follow the account. Default to Japanese after launch.
+- Payload's built-in auth with a `users` collection holding **one account per person: Steffan and the artist** (changed 2026-10-29 from one shared account).
+- No roles: every account can do everything (Payload's default access is "any logged-in user"). No change history, no email adapter.
+- "Forgot password" is turned off. Without an email adapter Payload only logs "Email attempted without being configured" (address and subject); no reset link is sent or logged (checked in 3.92.1).
+- **Create / reset:** in the admin (Users, or the account page), or with `scripts/seed-admin.ts`. It creates the account for `ADMIN_EMAIL`, or resets its password and clears a lockout if it exists; it never touches other accounts. `pnpm seed-admin` targets the local database, `pnpm seed-admin:remote` the real D1. Step-by-step: **docs/Admin Accounts.md**.
+- Payload defaults kept: login lasts 2 hours; 5 wrong passwords lock the account for 10 minutes.
+- Admin interface language: **switchable EN/JA** in the account settings, per account. Default to Japanese after launch.
 
 ## Domain
 
@@ -85,6 +88,9 @@ CLOUDFLARE_ACCOUNT_ID=<id> scripts/setup-cloudflare.sh
 - Every schema change gets a Payload migration. No manual edits to D1.
 - The `cities` table has its own SQL migration (it is outside Payload — see 02).
 - `pnpm run deploy:database` runs `payload migrate` from your machine with `NODE_ENV=production`, which makes `payload.config.ts` connect to the **real** D1 (the binding has `"remote": true`). Migrations reach Cloudflare only this way.
+- **First deploy to a new account is done step by step**, not with `pnpm run deploy`: migrate → `seed-admin:remote` for each person → `deploy:app` → secrets. While `users` is empty, `/admin` shows Payload's "Create first user" form to anyone, so the accounts must exist before the app is live. Full order in docs/Admin Accounts.md.
+- Secrets are set after the first `deploy:app` (`wrangler secret put` needs the Worker to exist), by piping a generated value so it is never shown or saved: `openssl rand -hex 32 | pnpm exec wrangler secret put PAYLOAD_SECRET`.
+- Bundle baseline (template + Payload + Lexical, 2026-10-29): **3.68 MB gzipped** (16.0 MB raw), limit 10 MB.
 
 ## Local development
 

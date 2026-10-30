@@ -14,7 +14,7 @@ The artist's tool for adding and editing works. Light, plain UI (see admin color
 
 ## Login (9a) — Decided
 
-- One shared account. Email + password, **Log in** button. Nothing else — no "forgot password". Steffan resets it if needed.
+- One account per person (Steffan, the artist). Email + password, **Log in** button. Nothing else — no "forgot password". Steffan resets passwords if needed (docs/Admin Accounts.md).
 - Wrong details: one error line under the form.
 
 ## Artworks table (9b) — Decided
