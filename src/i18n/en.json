@@ -49,5 +49,11 @@
       "sorrow": "sorrow",
       "delight": "delight"
     }
+  },
+  "admin": {
+    "images": {
+      "tooLarge": "This image is too large to process (over 100 megapixels, or a side over 50,000 px). Export a smaller version and upload that.",
+      "failed": "This image couldn't be processed. Export it again as JPG or PNG and try once more."
+    }
   }
 }

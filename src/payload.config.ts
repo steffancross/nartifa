@@ -1,11 +1,8 @@
-import fs from 'fs'
 import path from 'path'
 import { sqliteD1Adapter } from '@payloadcms/db-d1-sqlite'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
-import { CloudflareContext, getCloudflareContext } from '@opennextjs/cloudflare'
-import { GetPlatformProxyOptions } from 'wrangler'
 import { r2Storage } from '@payloadcms/storage-r2'
 import { en } from '@payloadcms/translations/languages/en'
 import { ja } from '@payloadcms/translations/languages/ja'
@@ -14,25 +11,11 @@ import { Artworks } from './collections/Artworks'
 import { Media } from './collections/Media'
 import { Series } from './collections/Series'
 import { Users } from './collections/Users'
+import { getCloudflareEnv } from './lib/cloudflare'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
-const realpath = (value: string) => {
-  try {
-    return fs.existsSync(value) ? fs.realpathSync(value) : undefined
-  } catch {
-    return undefined
-  }
-}
 
-const isCLI = process.argv.some((value) => {
-  const resolved = realpath(value)
-  if (!resolved) return false
-  return (
-    resolved.endsWith(path.join('payload', 'bin.js')) ||
-    resolved.endsWith(path.join('next', 'dist', 'bin', 'next'))
-  )
-})
 const isProduction = process.env.NODE_ENV === 'production'
 
 const createLog =
@@ -55,10 +38,8 @@ const cloudflareLogger = {
   silent: () => {},
 } as any // Use PayloadLogger type when it's exported
 
-const cloudflare =
-  isCLI || !isProduction
-    ? await getCloudflareContextFromWrangler()
-    : await getCloudflareContext({ async: true })
+// D1 and R2 for Payload; where they come from (Worker, local proxy, real resources) is in lib/cloudflare.ts
+const env = await getCloudflareEnv()
 
 export default buildConfig({
   admin: {
@@ -94,24 +75,14 @@ export default buildConfig({
   },
   // autoIncrement: ids are never reused after a delete. Work ids are permanent URLs (/works/12),
   // and SQLite can't add AUTOINCREMENT to an existing table, so this must be on before the first migration
-  db: sqliteD1Adapter({ binding: cloudflare.env.D1, autoIncrement: true }),
+  db: sqliteD1Adapter({ binding: env.D1, autoIncrement: true }),
   logger: isProduction ? cloudflareLogger : undefined,
   plugins: [
     r2Storage({
-      bucket: cloudflare.env.R2,
+      bucket: env.R2,
       // Originals under media/ in the one bucket (Build Spec 02, R2 layout)
       collections: { media: { prefix: 'media' } },
     }),
   ],
 })
 
-// Adapted from https://github.com/opennextjs/opennextjs-cloudflare/blob/d00b3a13e42e65aad76fba41774815726422cc39/packages/cloudflare/src/api/cloudflare-context.ts#L328C36-L328C46
-function getCloudflareContextFromWrangler(): Promise<CloudflareContext> {
-  return import(/* webpackIgnore: true */ `${'__wrangler'.replaceAll('_', '')}`).then(
-    ({ getPlatformProxy }) =>
-      getPlatformProxy({
-        environment: process.env.CLOUDFLARE_ENV,
-        remoteBindings: isProduction,
-      } satisfies GetPlatformProxyOptions),
-  )
-}

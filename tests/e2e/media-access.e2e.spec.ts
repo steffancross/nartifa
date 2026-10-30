@@ -3,7 +3,8 @@ import { getPayload } from 'payload'
 
 import config from '../../src/payload.config.js'
 
-// Originals are never public: only logged-in admins can read media or its files (Build Spec 05)
+// Originals are never public: only logged-in admins can read media or its files. The named sizes
+// are public through /img (Build Spec 05)
 const user = { email: 'e2e-media@nartifa.test', password: 'e2e-media-test-password' }
 const png = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
@@ -43,6 +44,16 @@ test('media files and records need a login', async ({ playwright }) => {
     expect((await anonymous.get(`/api/media/${doc.id}`)).status()).toBe(403)
     expect((await anonymous.get(doc.url)).status()).toBe(403)
     expect((await admin.get(doc.url, { headers: auth })).status()).toBe(200)
+
+    // The sizes are public, through the real dev server (proxy.ts leaves /img alone)
+    const card = await anonymous.get(`/img/media/${doc.id}/card`)
+    expect(card.status()).toBe(200)
+    expect(card.headers()['content-type']).toBe('image/webp')
+    expect(card.headers()['cache-control']).toBe('public, max-age=31536000, immutable')
+    expect((await anonymous.get(`/img/media/${doc.id}/nope`)).status()).toBe(404)
+
+    // The admin's thumbnails use the 200px size, not the original
+    expect(doc.thumbnailURL).toMatch(new RegExp(`^/img/media/${doc.id}/thumb\\?v=\\d+$`))
   } finally {
     await admin.delete(`/api/media/${doc.id}`, { headers: auth })
     await anonymous.dispose()

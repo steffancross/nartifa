@@ -107,7 +107,7 @@ CLOUDFLARE_ACCOUNT_ID=<id> scripts/setup-cloudflare.sh
 
 ## Local development
 
-- `pnpm dev` runs Next.js in Node. `payload.config.ts` gets the bindings from wrangler's `getPlatformProxy` (Miniflare) with remote bindings **off**, so D1 and R2 are local stand-ins in `.wrangler/state/v3/` (gitignored):
+- `pnpm dev` runs Next.js in Node. `payload.config.ts` (through `src/lib/cloudflare.ts`, shared with the hooks and the image route) gets the bindings from wrangler's `getPlatformProxy` (Miniflare) with remote bindings **off**, so D1 and R2 are local stand-ins in `.wrangler/state/v3/` (gitignored):
   - D1: a real SQLite file under `d1/miniflare-D1DatabaseObject/`.
   - R2: uploaded files kept on disk under `r2/`, with a small SQLite index.
   - Nothing touches Cloudflare. Delete `.wrangler/state` to start from an empty database and bucket.

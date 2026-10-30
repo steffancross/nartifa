@@ -98,13 +98,13 @@ src/
     (site)/[locale]/   public pages: page.tsx (landing), quiz/, works/, works/[slug]/, globe/, about/, privacy/
     (payload)/         Payload admin + REST (from the template)
     api/site/          globe pins, uploads, city search
-    img/[...path]/     image route
+    img/[...path]/     image route: stored size from R2, rebuilt from the original if missing (05)
   collections/         Artworks, Series (labelled "Collections" — 02), Media, GlobePhotos, GlobeUploads, Users
   admin/               custom admin components (review queue, cells, filters, city picker)
   config/
     quiz.ts            senses, option keys a/b, feelings (in the repo); later: icon file names, feeling weight
     artworks.ts        REQUIRED_FIELDS: what a work needs before it can be shown (02)
-    images.ts          named sizes
+    images.ts          named sizes, which collection gets which, binding limits, cache headers (05)
     limits.ts          upload limits, rate limits, queue cap
   components/          shared site components (LanguageToggle for now)
   hooks/
@@ -112,6 +112,7 @@ src/
     artworks.ts        status + missing, searchText (02, 07)
     media.ts           deleting a main image takes its works off the site (02)
     series.ts          collection slug from the English name (02)
+    image-sizes.ts     every named size at upload, derived/ writes, cleanup on delete (05)
   styles/
     fonts.ts           the three fonts (next/font/google), the one place to swap them
     tokens.css         design tokens as CSS variables + base rules (design spec Tokens)
@@ -131,7 +132,9 @@ src/
     data.ts            ALL public reads: Payload local API wrapped in unstable_cache + tags (08)
     matching.ts        scoring + tie-break (pure functions, unit tested)
     normalize.ts       city-name normalizing, shared by the import script and city search (06)
-    images.ts          URL builder for named sizes
+    images.ts          URL builder, derived/ keys, route path check, pixel limit, orientation swap (pure, unit tested)
+    image-transform.ts runs the Images binding: one size, all sizes, output dimensions
+    cloudflare.ts      getCloudflareEnv(): the bindings, from OpenNext on the Worker, wrangler's proxy elsewhere (01)
     i18n.ts            pick() / langOf() for artwork field fallback (03)
     reveal.ts          in-memory reveal flag set by the quiz (03)
   globe/               three.js scene, picking, controls
@@ -140,6 +143,7 @@ tests/
   int/                 Vitest, Payload local API against the local database (pnpm test:int runs unit + int).
                        Files start with `// @vitest-environment node` (jsdom breaks Payload's esbuild)
   e2e/                 Playwright against pnpm dev (pnpm test:e2e)
+  fixtures/            test images (phone-style portrait JPEG, small PNG, 144 MP PNG) — README says how they're made
                        Both runners take one file at a time: tests share the one local SQLite file
 eslint.config.mjs      flat config: eslint-config-next core-web-vitals + typescript; generated files ignored (pnpm lint)
 scripts/

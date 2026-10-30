@@ -15,6 +15,27 @@
 
 Payload's usual `sharp` resizing is not used (it can't run in Workers).
 
+### In the repo (2026-10-30)
+
+| Piece | Where |
+| --- | --- |
+| Sizes, which collection gets which, limits, cache headers | `src/config/images.ts` |
+| URL builder, `derived/` keys, route path check, pixel limit, orientation decision (pure) | `src/lib/images.ts` |
+| Running the binding (`makeSize`, `makeSizes`, `outputDimensions`, error 9413) | `src/lib/image-transform.ts` |
+| The three hooks, per collection: `imageSizeHooks('media')` | `src/hooks/image-sizes.ts` |
+| Image route | `src/app/img/[...path]/route.ts` |
+| Bindings for hooks and route (Worker or local proxy) | `src/lib/cloudflare.ts` |
+
+- Wired to `media` only. `globe-photos` is added to `IMAGE_COLLECTIONS` in the globe phase; until then `/img/globe-photos/…` is a 404.
+- The hooks only run when a file comes with the save (`req.file`): an upload or a replaced file. Saving other fields leaves the sizes alone.
+- **Hook order is safe:** the R2 plugin stores the original in its own `afterChange`, after ours. A rejection in `beforeChange` leaves no record and no original.
+- The R2 plugin deletes the original on delete; our `afterDelete` removes `derived/{collection}/{id}/`.
+- Writes to R2 go as a `Blob`: a typed array doesn't survive the local dev proxy (workers-sdk#6047; the R2 plugin does the same).
+- The route's rebuild finds the original with one plain D1 query (`SELECT filename, prefix FROM media WHERE id = ?`; key `{prefix}/{filename}`), with no Payload.
+- **Admin thumbnails** use `thumb` through the route (`upload.adminThumbnail`), so admin lists never load the original.
+- The rejection messages are `admin.images.tooLarge` / `admin.images.failed` in `ja.json` / `en.json`, shown in the admin's language.
+- The binding works in `pnpm dev` and tests through wrangler's local proxy (checked 2026-10-30), so the whole pipeline is tested locally: `tests/int/images.int.spec.ts` (sizes, orientation, 144 MP rejection, replace, delete, route serve/rebuild/404s) and `tests/e2e/media-access.e2e.spec.ts` (`/img` public through the dev server).
+
 ### Why this way
 
 - **Cost is fixed:** each size of each image is transformed exactly once. The binding is billed per *unique* transformation per calendar month (format and quality don't count), so even repeat generation wouldn't add cost — but stored files mean it never happens.
@@ -56,14 +77,13 @@ Artwork and photo views use `srcset` with `md` and `lg` (`sizes` set per layout)
 
 | Image | Sizes |
 | --- | --- |
-| Artwork main image | all six |
-| Artwork extra images | `thumb`, `md`, `lg`, `xl` |
+| Artwork images (`media`), main or extra | all six — Decided 2026-10-30: an image doesn't know at upload whether it will be a main or an extra image, and the artist can swap them later |
 | Globe photos | `thumb`, `md`, `lg` |
 | Landing image | none — a static file in the code, sized by hand |
 
 ### Cost check
 
-Transformations happen only at upload, so this is a count of uploads, not of visits. About 100 works × (6 + 3 extra × 4) ≈ 1,800 in total, spread over the months the artist uploads, plus 4 per globe photo (clean copy + 3 sizes). The first 5,000 unique transformations each month are included. Adding a size means one transformation per existing image the first time it's requested — check the count before adding.
+Transformations happen only at upload, so this is a count of uploads, not of visits. About 100 works × 4 images × 6 sizes ≈ 2,400 in total, spread over the months the artist uploads, plus 4 per globe photo (clean copy + 3 sizes). The first 5,000 unique transformations each month are included. Adding a size means one transformation per existing image the first time it's requested — check the count before adding.
 
 ## Privacy and access — Decided
 

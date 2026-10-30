@@ -78,14 +78,16 @@ The risky assumptions get proven here. If one fails, update the spec before movi
 - All five: unit + `tests/int/hooks.int.spec.ts`, pass locally (2026-10-30)
 
 **Images** (B05)
-- [ ] `config/images.ts` sizes; `lib/images.ts` URL builder
-- [ ] `beforeChange`: all sizes via the binding, kept in `req.context`; throw on failure
-- [ ] Orientation fix: compare `lg` output shape with stored width/height, swap if different
-- [ ] `afterChange`: write `derived/{collection}/{id}/{size}.webp`
-- [ ] `afterDelete`: delete original + derived files
-- [ ] Image route `/img/{collection}/{id}/{size}?v=`: checks, R2 read, rebuilds a missing size, cache headers
-- [ ] Verify: portrait phone JPEG → all sizes upright, no EXIF, stored dimensions portrait — binding part confirmed on Cloudflare (upright, no EXIF); the stored-dimensions swap is checked once the pipeline exists
-- [ ] Verify: an oversized file is rejected with a clear message — Cloudflare's limit is 100 MP / 50,000px (error 9413); the local runtime has none, so the hook checks the limit itself (B05)
+- [x] `config/images.ts` sizes; `lib/images.ts` URL builder — every artwork image gets all six sizes (B05, 2026-10-30)
+- [x] `beforeChange`: all sizes via the binding, kept in `req.context`; throw on failure — plus our own 100 MP / 50,000px check first
+- [x] Orientation fix: compare `lg` output shape with stored width/height, swap if different
+- [x] `afterChange`: write `derived/{collection}/{id}/{size}.webp`
+- [x] `afterDelete`: delete original + derived files — original by the R2 plugin, derived by ours
+- [x] Image route `/img/{collection}/{id}/{size}?v=`: checks, R2 read, rebuilds a missing size, cache headers — `media` only until globe photos
+- [x] Admin thumbnails use `thumb` through `/img`
+- All of the above: unit + `tests/int/images.int.spec.ts` + e2e, pass locally with the local Images binding (2026-10-30)
+- [ ] Verify: portrait phone JPEG → all sizes upright, no EXIF, stored dimensions portrait — binding part confirmed on Cloudflare (upright, no EXIF); the stored-dimensions swap passes locally (`tests/int/images.int.spec.ts`). Live check after deploy
+- [ ] Verify: an oversized file is rejected with a clear message — Cloudflare's limit is 100 MP / 50,000px (error 9413); the local runtime has none, so the hook checks the limit itself (B05). Passes locally; live check after deploy
 
 **Admin UI** (B07)
 - [ ] `/admin` opens on the artworks table; nav: Artworks · Review queue · Submissions · Collections
