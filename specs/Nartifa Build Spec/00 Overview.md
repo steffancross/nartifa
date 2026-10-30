@@ -141,6 +141,7 @@ tests/
                        Files start with `// @vitest-environment node` (jsdom breaks Payload's esbuild)
   e2e/                 Playwright against pnpm dev (pnpm test:e2e)
                        Both runners take one file at a time: tests share the one local SQLite file
+eslint.config.mjs      flat config: eslint-config-next core-web-vitals + typescript; generated files ignored (pnpm lint)
 scripts/
   setup-cloudflare.sh  creates the D1 database and R2 bucket in APAC (01)
   import-geonames.ts   loads the city list into D1

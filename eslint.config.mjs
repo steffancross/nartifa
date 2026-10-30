@@ -1,17 +1,12 @@
-import { dirname } from 'path'
-import { fileURLToPath } from 'url'
-import { FlatCompat } from '@eslint/eslintrc'
+import { defineConfig, globalIgnores } from 'eslint/config'
+import nextVitals from 'eslint-config-next/core-web-vitals'
+import nextTs from 'eslint-config-next/typescript'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-  resolvePluginsRelativeTo: __dirname,
-})
-
-const eslintConfig = [
-  ...compat.extends('next/core-web-vitals', 'next/typescript'),
+// eslint-config-next 16 ships flat config, so it's imported directly. The template loaded it through
+// FlatCompat (@eslint/eslintrc), which crashes ESLint 9 with "Converting circular structure to JSON"
+const eslintConfig = defineConfig([
+  ...nextVitals,
+  ...nextTs,
   {
     rules: {
       '@typescript-eslint/ban-ts-comment': 'warn',
@@ -31,9 +26,18 @@ const eslintConfig = [
       ],
     },
   },
-  {
-    ignores: ['.next/', 'src/payload-types.ts', 'src/payload-generated-schema.ts'],
-  },
-]
+  // Replaces eslint-config-next's default ignores, so those are repeated here. The rest are generated
+  globalIgnores([
+    '.next/**',
+    'out/**',
+    'build/**',
+    'next-env.d.ts',
+    '.open-next/**',
+    'cloudflare-env.d.ts',
+    'src/payload-types.ts',
+    'src/payload-generated-schema.ts',
+    'src/migrations/**',
+  ]),
+])
 
 export default eslintConfig
