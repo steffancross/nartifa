@@ -106,6 +106,11 @@ src/
     images.ts          named sizes
     limits.ts          upload limits, rate limits, queue cap
   components/          shared site components (LanguageToggle for now)
+  hooks/
+    revalidate.ts      revalidateOnChange(tag): Payload afterChange/afterDelete hooks that clear a cache tag (08)
+  styles/
+    fonts.ts           the three fonts (next/font/google), the one place to swap them
+    tokens.css         design tokens as CSS variables + base rules (design spec Tokens)
   proxy.ts             language choice → next-intl rewrite (03). Next 16's name for middleware
   i18n/
     routing.ts         next-intl routing (localePrefix 'never', cookie)
@@ -114,6 +119,7 @@ src/
     accept-language.ts first Accept-Language entry → ja / en (unit tested)
     ja.json  en.json   all fixed interface strings (incl. quiz words, About text)
   lib/
+    cache-tags.ts      the two cache tags, works and globe (08)
     data.ts            ALL public reads: Payload local API wrapped in unstable_cache + tags (08)
     matching.ts        scoring + tie-break (pure functions, unit tested)
     normalize.ts       city-name normalizing, shared by the import script and city search (06)

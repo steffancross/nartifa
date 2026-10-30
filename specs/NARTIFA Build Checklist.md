@@ -38,16 +38,16 @@ The risky assumptions get proven here. If one fails, update the spec before movi
 - [ ] `seed-admin` script; admin login works (B01) — script done (prompts for email/password); Steffan's account created on the real D1 (2026-10-30). **Login on the Worker blocked** by Payload's 600k PBKDF2 vs the Workers 100k cap (B01 Blocker): upgrade to the next Payload 3.x release, set `auth.passwordHashIterations: 100000`, reset the account, log in. Artist account later
 
 **Structure**
-- [ ] Repo layout per B00: `app/(site)/[locale]/`, `(payload)/`, `api/site/`, `img/`, `config/`, `lib/` — `(site)/[locale]/` and `(payload)/` done (template demo `(frontend)` removed); the rest appear with their first file (`lib/` in the next chunk)
-- [ ] Tokens as CSS variables (public dark + admin light), fonts defined in one place (D00 Tokens, B08)
+- [ ] Repo layout per B00: `app/(site)/[locale]/`, `(payload)/`, `api/site/`, `img/`, `config/`, `lib/` — `(site)/[locale]/`, `(payload)/`, `lib/` done (template demo `(frontend)` removed); `api/site/`, `img/`, `config/` appear with their first file in later phases
+- [x] Tokens as CSS variables (public dark + admin light), fonts defined in one place (D00 Tokens, B08) — public tokens in `src/styles/tokens.css`, fonts in `src/styles/fonts.ts` (2026-10-30). Admin stays on Payload's **dark** theme for now (Steffan's call); light admin colors later
 - [x] next-intl routing: `localePrefix: 'never'`, default `ja`, cookie `lang` for 1 year (B03)
 - [x] `proxy.ts`: first `Accept-Language` entry → `ja`/`en`, then next-intl; matcher skips `/admin`, `/api`, `/img`, `/_next`, files (B03) — unit + e2e tests pass locally (2026-10-30)
 - [x] `ja.json` / `en.json` with placeholder text
 - [x] Localized 404s: `[locale]/[...rest]/page.tsx` + `[locale]/not-found.tsx` (B03) — HTTP 404 in both languages (e2e)
-- [ ] `lib/data.ts` with one `unstable_cache` read tagged `works`; one Payload hook calling `revalidateTag('works', { expire: 0 })` (B08)
+- [x] `lib/data.ts` with one `unstable_cache` read tagged `works`; one Payload hook calling `revalidateTag('works', { expire: 0 })` (B08) — `getMediaCount` + `revalidateOnChange` on `media`; unit + e2e tests pass locally (2026-10-30). Live caching is the page-cache Verify line
 
 **Verify** (B09)
-- [x] Bundle under 10MB compressed — size: 3.68 MB gzipped, confirmed by the first deploy (2026-10-30); recheck after Phase 1
+- [x] Bundle under 10MB compressed — size: 3.68 MB gzipped, confirmed by the first deploy (2026-10-30); 4.20 MB after chunk 2b (Payload's local API now also in the public pages); recheck after Phase 1
 - [ ] Cold start from Japan — time: ___
 - [ ] Page cache: second visit doesn't call Payload (log it); an admin save clears it; `ja` and `en` cached separately; `revalidations` table created by deploy — `revalidations` created (2026-10-30). **First live check failed:** every visit to `/` returns `x-nextjs-cache: STALE` and logs "Failed to revalidate stale page /en — Dummy queue is not implemented". Cause: pages rendered on first visit aren't in the prerender manifest, and Next then assumes revalidate after 1 second unless the same instance rendered them (Workers instances don't share that memory). Known OpenNext bug ([opennextjs-aws#1250](https://github.com/opennextjs/opennextjs-aws/issues/1250)), fixed in #1317, not released yet: upgrade `@opennextjs/cloudflare` when a release includes it, then re-check (B08 Known issue)
 - [x] `proxy.ts` works on OpenNext (language switches correctly). If not: rename to `middleware.ts` — passed on workers.dev 2026-10-30: all language rules, cookie, localized 404s, `/ja` → 307 to `/`, `/admin` and `/api` untouched

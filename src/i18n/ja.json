@@ -4,7 +4,8 @@
   },
   "landing": {
     "heading": "NARTIFA",
-    "placeholder": "ここにトップページが入ります（仮）"
+    "placeholder": "ここにトップページが入ります（仮）",
+    "mediaCount": "アーカイブの画像：{count}枚"
   },
   "language": {
     "switchTo": "English"

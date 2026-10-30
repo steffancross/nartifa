@@ -59,6 +59,8 @@ const cloudflare =
 export default buildConfig({
   admin: {
     user: Users.slug,
+    // Dark for now (decided 2026-10-30); the design's light admin colors come later (Design Spec Tokens)
+    theme: 'dark',
     importMap: {
       baseDir: path.resolve(dirname),
     },

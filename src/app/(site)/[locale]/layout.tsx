@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation'
 import type { ReactNode } from 'react'
 
 import { routing } from '@/i18n/routing'
+import { fontVariables } from '@/styles/fonts'
+import '@/styles/tokens.css'
 
 type Props = {
   children: ReactNode
@@ -31,7 +33,7 @@ export default async function SiteLayout({ children, params }: Props) {
   setRequestLocale(locale)
 
   return (
-    <html lang={locale}>
+    <html lang={locale} className={fontVariables}>
       <body>
         <NextIntlClientProvider>{children}</NextIntlClientProvider>
       </body>

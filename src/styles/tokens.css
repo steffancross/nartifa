@@ -1,0 +1,121 @@
+/* Design tokens for the public site (Design Spec 00 Tokens). Dark, minimal, quiet type.
+   Font families come from fonts.ts as --font-latin / --font-ja / --font-mono */
+
+:root {
+  /* Color */
+  --bg: #0d0d0d;
+  --surface: #161616;
+  --surface-2: #1f1f1f;
+  --line: #2e2e2e;
+  --text: #ededea;
+  --text-2: #a3a39e;
+  --text-3: #6e6e6a; /* hints and disabled only: fails 4.5:1 on --bg */
+  --accent: #ededea; /* selected state = inverted: --accent fill, --bg text */
+  --pin: #ffffff; /* until the artist's custom pin image */
+  --error: #e5806b; /* form errors only */
+
+  /* Type. Latin glyphs from the first family, kana and kanji fall through to the second */
+  --font-sans: var(--font-latin), var(--font-ja), system-ui, sans-serif;
+  --font-label: var(--font-mono), ui-monospace, monospace;
+
+  --text-display: 32px;
+  --leading-display: 1.2;
+  --text-title: 22px;
+  --leading-title: 1.3;
+  --text-body: 16px;
+  --leading-body: 1.7;
+  --text-small: 14px;
+  --leading-small: 1.6;
+  --text-label: 12px;
+  --leading-label: 1.4;
+  --tracking-label: 0.04em;
+  --leading-ja: 1.8; /* any Japanese text, one step more than English */
+
+  /* Spacing: only these steps. --page-margin is the one exception (20 on mobile) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-24: 96px;
+
+  --page-margin: 20px;
+  --max-content: 1200px;
+  --max-text: 640px;
+  --grid-gap: 12px;
+
+  /* Shape: no shadows; overlays separate by --surface */
+  --radius-media: 0;
+  --radius-control: 4px;
+  --touch-target: 44px;
+
+  /* Motion: quiet and short, nothing bounces */
+  --motion-fast: 150ms ease-out;
+  --motion-base: 250ms ease-out;
+  --motion-slow: 600ms ease-out;
+}
+
+/* Tablet keeps the mobile layout with wider margins */
+@media (min-width: 768px) {
+  :root {
+    --page-margin: 48px;
+  }
+}
+
+@media (min-width: 1200px) {
+  :root {
+    --text-display: 48px;
+    --leading-display: 1.15;
+    --text-title: 28px;
+    --text-body: 17px;
+    --grid-gap: 24px;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  font-weight: 400;
+  line-height: var(--leading-body);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+}
+
+/* Japanese text keeps its taller line height anywhere, including Japanese artwork text on an
+   English page (wrapped with lang="ja", Build Spec 03) */
+:lang(ja) {
+  line-height: var(--leading-ja);
+}
+
+/* 16px so phones don't zoom into fields */
+input,
+textarea,
+select {
+  font: inherit;
+  font-size: 16px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

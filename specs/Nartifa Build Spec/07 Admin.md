@@ -6,7 +6,7 @@ Design spec 09 and 10. Built on Payload's admin; custom only where the stock adm
 
 - `/admin` opens on the **artworks table** (redirect from Payload's dashboard).
 - Nav: Artworks · Review queue (with pending count) · Submissions · Collections. Hide `media`, `globe-photos` and `users` from the nav where possible.
-- Admin colors from design spec Tokens (admin section), applied through Payload's admin CSS.
+- Admin colors from design spec Tokens (admin section), applied through Payload's admin CSS. **For now the admin is Payload's dark theme** (`admin.theme: 'dark'`, decided 2026-10-30); the light admin colors are applied later.
 - Every field label written in EN and JA. Payload's own interface text is available in Japanese; language switchable in account settings.
 - Delete confirmation text overridden to say the item **cannot be recovered**.
 

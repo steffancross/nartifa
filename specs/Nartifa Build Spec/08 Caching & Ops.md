@@ -41,6 +41,7 @@ A cache hit costs: middleware, one R2 read, one tag check in D1.
 ### Clearing — publishing stays instant
 
 - All public reads go through `lib/data.ts`. Each function wraps a Payload local API call in `unstable_cache` with a tag. Pages inherit the tags of the data they use.
+- **In the repo (2026-10-30):** `src/lib/data.ts` (example read `getMediaCount`, shown on the landing placeholder until Phase 3), tags in `src/lib/cache-tags.ts`, hooks from `revalidateOnChange(tag)` in `src/hooks/revalidate.ts`, attached to `media`. Tests: `tests/unit/revalidate-hook.unit.spec.ts` (calls `revalidateTag(tag, { expire: 0 })`, skips with `skipRevalidate`) and `tests/e2e/cache.e2e.spec.ts` (upload/delete through the API changes the count). `pnpm dev` refreshes caches on every request, so these prove the wiring, not the caching; that is the live check (checklist).
 - Two tags:
   - `works` — anything artwork-related: artwork pages, All Works, the quiz list, 404s for artwork ids.
   - `globe` — pins and upload details.
@@ -72,6 +73,7 @@ Cloudflare Web Analytics. Free, no cookies, no consent banner.
 - Instrument Sans, Zen Kaku Gothic New, JetBrains Mono from Google Fonts, `display: swap`.
 - Google Fonts splits the Japanese font so only the needed characters download.
 - Font families are defined once (CSS variables / tokens) so swapping them later is a one-place change.
+- **In the repo (2026-10-30):** `src/styles/fonts.ts` loads them with `next/font/google`: files are downloaded at build time and served from the site (browsers never contact Google). Zen Kaku Gothic New is weight 400 only with `preload: false`; Google's ~120 character-range slices are kept, so the browser fetches only the slices a page uses. 133 font files, 1.7 MB, all in static assets (not the Worker bundle). Exposed as `--font-latin`, `--font-ja`, `--font-mono`; `tokens.css` builds `--font-sans` from them.
 
 ## Social previews — Decided
 

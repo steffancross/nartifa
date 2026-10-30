@@ -4,7 +4,8 @@
   },
   "landing": {
     "heading": "NARTIFA",
-    "placeholder": "The landing page goes here (placeholder)"
+    "placeholder": "The landing page goes here (placeholder)",
+    "mediaCount": "{count, plural, one {# image} other {# images}} in the archive"
   },
   "language": {
     "switchTo": "日本語"
