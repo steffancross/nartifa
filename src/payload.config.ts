@@ -7,9 +7,13 @@ import { fileURLToPath } from 'url'
 import { CloudflareContext, getCloudflareContext } from '@opennextjs/cloudflare'
 import { GetPlatformProxyOptions } from 'wrangler'
 import { r2Storage } from '@payloadcms/storage-r2'
+import { en } from '@payloadcms/translations/languages/en'
+import { ja } from '@payloadcms/translations/languages/ja'
 
-import { Users } from './collections/Users'
+import { Artworks } from './collections/Artworks'
 import { Media } from './collections/Media'
+import { Series } from './collections/Series'
+import { Users } from './collections/Users'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -65,7 +69,24 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Media],
+  collections: [Artworks, Series, Media, Users],
+  // Content languages: artwork fields have ja/en values, Japanese first (Build Spec 02, 03)
+  localization: {
+    locales: [
+      { code: 'ja', label: '日本語' },
+      { code: 'en', label: 'English' },
+    ],
+    defaultLocale: 'ja',
+    fallback: true,
+  },
+  // The admin's own interface language, switchable in account settings (Build Spec 07)
+  i18n: {
+    supportedLanguages: { en, ja },
+  },
+  // Matches the Images binding's 20 MB input limit (Build Spec 05)
+  upload: {
+    limits: { fileSize: 20_000_000 },
+  },
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
@@ -78,7 +99,8 @@ export default buildConfig({
   plugins: [
     r2Storage({
       bucket: cloudflare.env.R2,
-      collections: { media: true },
+      // Originals under media/ in the one bucket (Build Spec 02, R2 layout)
+      collections: { media: { prefix: 'media' } },
     }),
   ],
 })

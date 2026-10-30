@@ -43,7 +43,6 @@ test('the landing count follows uploads and deletes', async ({ request }) => {
     headers: auth,
     multipart: {
       file: { name: 'e2e-cache.png', mimeType: 'image/png', buffer: png },
-      _payload: JSON.stringify({ alt: 'e2e cache test' }),
     },
   })
   expect(upload.ok()).toBe(true)

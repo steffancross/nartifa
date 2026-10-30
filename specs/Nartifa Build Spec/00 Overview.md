@@ -102,7 +102,7 @@ src/
   collections/         Artworks, Series (labelled "Collections" — 02), Media, GlobePhotos, GlobeUploads, Users
   admin/               custom admin components (review queue, cells, filters, city picker)
   config/
-    quiz.ts            steps, option keys, icon file names, feeling weight
+    quiz.ts            senses, option keys a/b, feelings (in the repo); later: icon file names, feeling weight
     images.ts          named sizes
     limits.ts          upload limits, rate limits, queue cap
   components/          shared site components (LanguageToggle for now)
@@ -115,6 +115,7 @@ src/
   i18n/
     routing.ts         next-intl routing (localePrefix 'never', cookie)
     navigation.ts      next-intl Link / redirect / useRouter / usePathname — use these, never next/link
+    admin-labels.ts    { en, ja } admin labels read from ja.json / en.json (quiz words shared with the site)
     request.ts         loads ja.json / en.json (English falls back to Japanese per key)
     accept-language.ts first Accept-Language entry → ja / en (unit tested)
     ja.json  en.json   all fixed interface strings (incl. quiz words, About text)
@@ -129,8 +130,10 @@ src/
   globe/               three.js scene, picking, controls
 tests/
   unit/                Vitest, pure logic (pnpm test:unit)
-  int/                 Vitest, Payload local API against the local database (pnpm test:int runs unit + int)
+  int/                 Vitest, Payload local API against the local database (pnpm test:int runs unit + int).
+                       Files start with `// @vitest-environment node` (jsdom breaks Payload's esbuild)
   e2e/                 Playwright against pnpm dev (pnpm test:e2e)
+                       Both runners take one file at a time: tests share the one local SQLite file
 scripts/
   setup-cloudflare.sh  creates the D1 database and R2 bucket in APAC (01)
   import-geonames.ts   loads the city list into D1

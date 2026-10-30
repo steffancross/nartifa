@@ -68,11 +68,28 @@ Transformations happen only at upload, so this is a count of uploads, not of vis
 ## Privacy and access — Decided
 
 - **The R2 bucket is private.** Originals are never served publicly; nobody can download the artist's full-resolution files.
+- Payload's own file route (`/api/media/file/…`) is closed too: `media` read access is logged-in only (02). Checked by `tests/e2e/media-access.e2e.spec.ts`: logged out, record and file are 403.
 - The image route checks, in order:
   1. `collection` is `media` or `globe-photos`, and `size` is one that collection has (table above). Else 404.
   2. `media`: always allowed (artworks only appear on the site when live; images of hidden works are low risk).
   3. `globe-photos`: allowed if its upload is `live` — one plain D1 query, no Payload. Otherwise allowed **only** for a logged-in admin (`payload.auth({ headers })`; this starts Payload, but only admins ever reach it). Everyone else gets 404.
 - Hiding or rejecting a live photo takes effect on the next request: there is no shared cache holding it (see Workers Cache above).
+
+## Binding checked on Cloudflare (2026-10-30)
+
+A throwaway Worker ran the six sizes above (WebP q85, same `fit` options) on Cloudflare's network (`wrangler dev --remote`) and in the local runtime, with a phone-style JPEG (stored 4032×3024 sideways + EXIF Orientation 6, camera make/model, GPS), a 300×200 PNG and a 12000×12000 JPEG.
+
+| | Cloudflare | Local runtime (`pnpm dev`, Miniflare + `sharp`) |
+| --- | --- | --- |
+| Orientation | Every size upright (portrait: `md` 800×1066, `lg` 1600×2133, `xl` 2400×3200) | Same (`md` 800×1067) |
+| Metadata | No EXIF in any output (camera and GPS gone) | Same |
+| Small image | `md`/`lg`/`xl` stay 300×200; `thumb`, `card`, `og` exact size | Same |
+| `info()` on the phone JPEG | **3024×4032** — reports the upright shape | **4032×3024** — reports the stored, sideways shape |
+| 12000×12000 (144 MP) | **Rejected:** `info()` and every transform throw code `9413`, "Maximum dimension allowed is 50000 and maximum area allowed is 100000000" | Processed without complaint — **no limit locally** |
+
+Consequences for the build:
+- The orientation fix below (compare the `lg` **output's** shape with the recorded width/height) works in both. Don't rely on `info()` of the original: it differs between local and live.
+- **Check the pixel limit in our own hook** (area > 100,000,000 or a side > 50,000 → reject with the "export a smaller file" message) before calling the binding, so the rejection behaves the same in `pnpm dev` and live. Still map error `9413` from the binding to the same message, as a backstop.
 
 ## Placeholders
 
@@ -110,5 +127,5 @@ Generated, no admin field:
 | --- | --- | --- |
 | Types | JPG, PNG, WebP | JPG, PNG, WebP (iPhone Safari converts HEIC to JPEG) |
 | Max size | 20MB — Payload `upload.limits.fileSize: 20_000_000`. Matches the Images binding's 20 MB input limit | 5MB on the server; the browser re-encodes first (see 06) |
-| Too large in pixels for the binding | Upload rejected at the generate-sizes step, with a message to export a smaller file | Not possible — browser caps the long side at 2400px |
+| Too large in pixels for the binding (over 100 megapixels or a side over 50,000px — checked above) | Upload rejected at the generate-sizes step, with a message to export a smaller file | Not possible — browser caps the long side at 2400px |
 | Metadata | Stripped on output (WebP drops all metadata) | Stripped in the browser, **and** the server stores only its own WebP re-encode, never the visitor's bytes (06) |

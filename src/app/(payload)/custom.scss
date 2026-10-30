@@ -1,0 +1,5 @@
+// "Forgot password?" is off (Build Spec 01): there is no email service, so the link could never
+// work. Payload 3.92 always renders it on the login form, with no option to turn it off
+.login__form a[href$='/forgot'] {
+  display: none;
+}

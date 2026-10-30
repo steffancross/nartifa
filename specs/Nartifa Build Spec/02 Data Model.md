@@ -53,7 +53,7 @@ status   = !live            → hidden
 
 - Set `sqliteD1Adapter({ …, autoIncrement: true })` in `payload.config.ts` **before the first migration is generated**. SQLite can't add `AUTOINCREMENT` to an existing table, so turning it on later means rebuilding tables.
 - It applies to every collection. Harmless, and it also keeps globe upload ids from being reused.
-- Payload's link tables (`*_rels`, e.g. `artworks_rels` for collections) don't get it. Fine: their rows are never linked to.
+- Payload's helper tables (`*_rels`, `*_locales`, `*_texts`, e.g. `artworks_rels`, `artworks_locales`) don't get it. Fine: their rows are never linked to.
 - **Done (2026-10-28):** set in `payload.config.ts`; the template's own migration (generated without it) was deleted and `src/migrations/*_initial.ts` regenerated, so every table is created with `AUTOINCREMENT` from the first migration on.
 - Ids are not editable in the admin and nothing else is ever used in the URL, so a work's link can't change.
 - The go-live database starts fresh at 1. That's fine: build-time links are on `workers.dev`, a different address, so none of them can point at the new site.
@@ -72,6 +72,8 @@ The artist and the design call these **collections**. In code the slug is `serie
 
 Not shown on the public site in v1 (the graphic is paused). Built now so the data is ready.
 
+**In the repo (2026-10-30):** `src/collections/Series.ts` and `src/collections/Artworks.ts`, migration `20261030_155951_collections` (both main tables `AUTOINCREMENT`; checked by `tests/int/artworks-ids.int.spec.ts`). `missing` is a Payload `text` field with `hasMany` (stored in `artworks_texts`). The six select fields store the keys from `src/config/quiz.ts`; their admin labels are read from `quiz.*` in `ja.json`/`en.json` (`src/i18n/admin-labels.ts`). Hooks for `status`, `missing`, `searchText` and the series slug are the next chunk.
+
 ## `media` (artwork images)
 
 Payload upload collection, stored in R2 under `media/`.
@@ -83,7 +85,9 @@ Payload upload collection, stored in R2 under `media/`.
 
 - Accepted: JPG, PNG, WebP. Max 20MB (Proposed).
 - No `sharp` resizing — sizes are made by the Images binding at upload and stored under `derived/` (05).
-- No alt field — alt text is generated (05).
+- No alt field — alt text is generated (05). (The template's required `alt` was dropped in migration `20261030_155951_collections`.)
+- **Read access: logged-in admins only.** The template allowed anyone, which let `/api/media/file/<name>` serve full-resolution originals (05, Privacy). Public pages use Payload's local API, which skips access rules, so the site is unaffected.
+- Stored under `media/` via the R2 plugin's `prefix` option, which adds a `prefix` column (default `'media'`).
 
 ## `globe-photos`
 

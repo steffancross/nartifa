@@ -89,7 +89,7 @@ CLOUDFLARE_ACCOUNT_ID=<id> scripts/setup-cloudflare.sh
 
 - The site runs on a custom domain at go-live.
 - The build runs on `workers.dev`. Nothing depends on a zone: images are made by the binding and served from R2 (05), and the page cache lives in R2/D1 (08).
-- **Verify:** the Images binding works on `workers.dev` (bindings aren't tied to a zone, so expected yes). If not, attach a spare domain on Steffan's account for the build.
+- **Verify:** the Images binding works on `workers.dev` (bindings aren't tied to a zone, so expected yes). If not, attach a spare domain on Steffan's account for the build. **Checked 2026-10-30:** works on Steffan's account with no zone (all six sizes in a `wrangler dev --remote` test; see 05, Binding checked on Cloudflare).
 
 ## Deploy
 

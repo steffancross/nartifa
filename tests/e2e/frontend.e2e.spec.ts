@@ -47,7 +47,8 @@ test.describe('Language toggle', () => {
     const context = await browser.newContext({ locale: 'ja-JP' })
     const page = await context.newPage()
 
-    await page.goto('/')
+    // networkidle: the button only works once React has hydrated (slow on a cold dev server)
+    await page.goto('/', { waitUntil: 'networkidle' })
     await expect(page.locator('html')).toHaveAttribute('lang', 'ja')
 
     await page.getByRole('button', { name: 'English' }).click()

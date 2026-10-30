@@ -61,6 +61,7 @@ Switching later then means changing `localePrefix` to `'always'` and adding redi
 
 - next-intl (routing as above). Two files: `src/i18n/ja.json`, `src/i18n/en.json`.
 - Includes all interface text, quiz questions and option words, error messages, the About text and the GeoNames credit.
+- Quiz words are in `quiz.*` (2026-10-30): the design spec's English words, with **placeholder Japanese for the artist to confirm** (自然/工業, 木/金属, 甘い/辛い, なめらか/ざらざら, 鳥/電車, 喜/怒/哀/楽). The admin's tag selects read the same keys.
 - A missing English key falls back to Japanese.
 - All Japanese text uses line height 1.8 (design spec Tokens).
 

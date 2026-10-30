@@ -13,5 +13,41 @@
   "notFound": {
     "title": "ページが見つかりません",
     "home": "トップへ戻る"
+  },
+  "quiz": {
+    "senses": {
+      "sight": "視覚",
+      "smell": "嗅覚",
+      "taste": "味覚",
+      "touch": "触覚",
+      "hearing": "聴覚",
+      "feeling": "感情"
+    },
+    "sight": {
+      "a": "自然",
+      "b": "工業"
+    },
+    "smell": {
+      "a": "木",
+      "b": "金属"
+    },
+    "taste": {
+      "a": "甘い",
+      "b": "辛い"
+    },
+    "touch": {
+      "a": "なめらか",
+      "b": "ざらざら"
+    },
+    "hearing": {
+      "a": "鳥",
+      "b": "電車"
+    },
+    "feeling": {
+      "joy": "喜",
+      "anger": "怒",
+      "sorrow": "哀",
+      "delight": "楽"
+    }
   }
 }

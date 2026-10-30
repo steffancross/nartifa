@@ -13,5 +13,41 @@
   "notFound": {
     "title": "Page not found",
     "home": "Back to the start"
+  },
+  "quiz": {
+    "senses": {
+      "sight": "Sight",
+      "smell": "Smell",
+      "taste": "Taste",
+      "touch": "Touch",
+      "hearing": "Hearing",
+      "feeling": "Feeling"
+    },
+    "sight": {
+      "a": "nature",
+      "b": "industrial"
+    },
+    "smell": {
+      "a": "wood",
+      "b": "metal"
+    },
+    "taste": {
+      "a": "sweet",
+      "b": "spicy"
+    },
+    "touch": {
+      "a": "smooth",
+      "b": "rough"
+    },
+    "hearing": {
+      "a": "bird",
+      "b": "train"
+    },
+    "feeling": {
+      "joy": "joy",
+      "anger": "anger",
+      "sorrow": "sorrow",
+      "delight": "delight"
+    }
   }
 }

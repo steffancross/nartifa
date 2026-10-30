@@ -52,7 +52,7 @@ The risky assumptions get proven here. If one fails, update the spec before movi
 - [ ] Page cache: second visit doesn't call Payload (log it); an admin save clears it; `ja` and `en` cached separately; `revalidations` table created by deploy — `revalidations` created (2026-10-30). **First live check failed:** every visit to `/` returns `x-nextjs-cache: STALE` and logs "Failed to revalidate stale page /en — Dummy queue is not implemented". Cause: pages rendered on first visit aren't in the prerender manifest, and Next then assumes revalidate after 1 second unless the same instance rendered them (Workers instances don't share that memory). Known OpenNext bug ([opennextjs-aws#1250](https://github.com/opennextjs/opennextjs-aws/issues/1250)), fixed in #1317, not released yet: upgrade `@opennextjs/cloudflare` when a release includes it, then re-check (B08 Known issue)
 - [x] `proxy.ts` works on OpenNext (language switches correctly). If not: rename to `middleware.ts` — passed on workers.dev 2026-10-30: all language rules, cookie, localized 404s, `/ja` → 307 to `/`, `/admin` and `/api` untouched
 - [x] Ids never reused: create 1–3, delete 3, create one → it gets 4 (on `media` in Phase 0; `artworks` again in Phase 1 — B02) — passed locally 2026-10-28: got 4. Recheck on the real D1 after the first deploy
-- [ ] Images binding works on `workers.dev` (one test transform)
+- [x] Images binding works on `workers.dev` (one test transform) — all six sizes on Cloudflare via `wrangler dev --remote`, no zone needed (2026-10-30). Two live-vs-local differences recorded in B05
 - [ ] Payload admin can: redirect dashboard → artworks, hide collections from nav, change delete confirm text (B07)
 - [ ] **Phase check:** everything above passes, or the spec is updated with what changed
 
@@ -61,12 +61,12 @@ The risky assumptions get proven here. If one fails, update the spec before movi
 ## Phase 1 — Data model and artwork admin (D09)
 
 **Collections** (B02)
-- [ ] `artworks` with all fields, incl. `status`, `missing`, `searchText`
-- [ ] `series`, labelled "Collections" / "コレクション"
-- [ ] `media`: R2 under `media/`, JPG/PNG/WebP, `upload.limits.fileSize: 20_000_000` (B05)
-- [ ] `users`: one account per person (Steffan, artist), forgot-password off (B01)
-- [ ] Ids never reused on `artworks`: repeat the Phase 0 test (B02)
-- [ ] Migrations generated and applied
+- [x] `artworks` with all fields, incl. `status`, `missing`, `searchText` (2026-10-30; the hooks that fill them are below)
+- [x] `series`, labelled "Collections" / "コレクション"
+- [x] `media`: R2 under `media/`, JPG/PNG/WebP, `upload.limits.fileSize: 20_000_000` (B05) — also: `alt` removed, read access logged-in only (originals were public via `/api/media/file`)
+- [x] `users`: one account per person (Steffan, artist), forgot-password off (B01) — link hidden via admin CSS; the artist's account is created with `seed-admin:remote` once live login works
+- [x] Ids never reused on `artworks`: repeat the Phase 0 test (B02) — permanent test `tests/int/artworks-ids.int.spec.ts`, passes locally; recheck on the real D1 with the Phase 0 one
+- [ ] Migrations generated and applied — `20261030_155951_collections` generated (2026-10-30). Applied to the real D1 by the next `pnpm run deploy`
 
 **Hooks**
 - [ ] Status hook computes `status` and `missing` (B02)
@@ -81,8 +81,8 @@ The risky assumptions get proven here. If one fails, update the spec before movi
 - [ ] `afterChange`: write `derived/{collection}/{id}/{size}.webp`
 - [ ] `afterDelete`: delete original + derived files
 - [ ] Image route `/img/{collection}/{id}/{size}?v=`: checks, R2 read, rebuilds a missing size, cache headers
-- [ ] Verify: portrait phone JPEG → all sizes upright, no EXIF, stored dimensions portrait
-- [ ] Verify: an oversized file is rejected with a clear message
+- [ ] Verify: portrait phone JPEG → all sizes upright, no EXIF, stored dimensions portrait — binding part confirmed on Cloudflare (upright, no EXIF); the stored-dimensions swap is checked once the pipeline exists
+- [ ] Verify: an oversized file is rejected with a clear message — Cloudflare's limit is 100 MP / 50,000px (error 9413); the local runtime has none, so the hook checks the limit itself (B05)
 
 **Admin UI** (B07)
 - [ ] `/admin` opens on the artworks table; nav: Artworks · Review queue · Submissions · Collections

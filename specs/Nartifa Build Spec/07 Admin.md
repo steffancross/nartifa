@@ -14,7 +14,7 @@ Design spec 09 and 10. Built on Payload's admin; custom only where the stock adm
 
 | Screen / feature | Stock Payload | Custom |
 | --- | --- | --- |
-| 9a Login | Login screen; forgot-password off | — |
+| 9a Login | Login screen; forgot-password off — Payload 3.92 always renders the link, so `custom.scss` hides it (`.login__form a[href$='/forgot']`); there's no email service, so the page behind it can't send anything anyway | — |
 | 9b Artworks table | List view, search, column picker, New button, delete confirm | Quick filter row; custom cells; `searchText` field so search covers both titles |
 | Row ⋯ menu | Bulk select + actions | Small custom cell (Edit · Hide/Show · Delete) |
 | 9c/9d Form | All fields, relationship "create new", drag reorder, unsaved-changes warning, Saving/Saved messages | Status hook; "Not live — missing: …" note |

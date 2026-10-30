@@ -1,3 +1,5 @@
+// @vitest-environment node
+// Payload runs in Node; the jsdom default breaks esbuild (TextEncoder check)
 import { getPayload, Payload } from 'payload'
 import config from '@/payload.config'
 
