@@ -100,19 +100,21 @@ src/
     api/site/          globe pins, uploads, city search
     img/[...path]/     image route: stored size from R2, rebuilt from the original if missing (05)
   collections/         Artworks, Series (labelled "Collections" — 02), Media, GlobePhotos, GlobeUploads, Users
-  admin/               custom admin components (review queue, cells, filters, city picker)
+  admin/               custom admin components: dashboard redirect, artwork cells/filters/⋯ menu/status note, Images Unused filter (07); later review queue, city picker
   config/
     quiz.ts            senses, option keys a/b, feelings (in the repo); later: icon file names, feeling weight
     artworks.ts        REQUIRED_FIELDS: what a work needs before it can be shown (02)
+    admin.ts           the one admin menu heading (07)
     images.ts          named sizes, which collection gets which, binding limits, cache headers (05)
     limits.ts          upload limits, rate limits, queue cap
   components/          shared site components (LanguageToggle for now)
   hooks/
     revalidate.ts      revalidateOnChange(tag): Payload afterChange/afterDelete hooks that clear a cache tag (08)
-    artworks.ts        status + missing, searchText (02, 07)
+    artworks.ts        status + missing, displayTitle, searchText (02, 07)
     media.ts           deleting a main image takes its works off the site (02)
     series.ts          collection slug from the English name (02)
     image-sizes.ts     every named size at upload, derived/ writes, cleanup on delete (05)
+    image-usage.ts     media.inUse, refreshed on artwork save/delete (02)
   styles/
     fonts.ts           the three fonts (next/font/google), the one place to swap them
     tokens.css         design tokens as CSS variables + base rules (design spec Tokens)
@@ -129,6 +131,8 @@ src/
     artwork-status.ts  computeStatus: the status rule (pure, unit tested)
     search-text.ts     buildSearchText (pure, unit tested)
     slug.ts            slugify, uniqueSlug (pure, unit tested)
+    admin-format.ts    admin table/form text: price, missing fields, relative dates (pure, unit tested)
+    validation.ts      price and year checks for the artwork form
     data.ts            ALL public reads: Payload local API wrapped in unstable_cache + tags (08)
     matching.ts        scoring + tie-break (pure functions, unit tested)
     normalize.ts       city-name normalizing, shared by the import script and city search (06)

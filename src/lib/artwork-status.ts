@@ -5,12 +5,13 @@ export type ArtworkStatus = 'live' | 'hidden' | 'incomplete'
 const isEmpty = (value: unknown) =>
   value === null || value === undefined || value === '' || (Array.isArray(value) && value.length === 0)
 
-// The status rule (Build Spec 02): the artist's Live switch, held back while anything required is empty
+// The status rule (Build Spec 02): anything required empty → incomplete, and Live can't be on.
+// Otherwise the artist's Live switch decides between live and hidden
 export function computeStatus(work: { live?: boolean | null } & Partial<Record<RequiredField, unknown>>): {
   status: ArtworkStatus
   missing: RequiredField[]
 } {
   const missing = REQUIRED_FIELDS.filter((field) => isEmpty(work[field]))
-  if (!work.live) return { status: 'hidden', missing }
-  return { status: missing.length > 0 ? 'incomplete' : 'live', missing }
+  if (missing.length > 0) return { status: 'incomplete', missing }
+  return { status: work.live ? 'live' : 'hidden', missing }
 }

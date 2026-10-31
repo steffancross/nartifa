@@ -48,13 +48,13 @@ The risky assumptions get proven here. If one fails, update the spec before movi
 - [x] `lib/data.ts` with one `unstable_cache` read tagged `works`; one Payload hook calling `revalidateTag('works', { expire: 0 })` (B08) — `getMediaCount` + `revalidateOnChange` on `media`; unit + e2e tests pass locally (2026-10-30). Live caching is the page-cache Verify line
 
 **Verify** (B09)
-- [x] Bundle under 10MB compressed — size: 3.68 MB gzipped, confirmed by the first deploy (2026-10-30); 4.20 MB after chunk 2b (Payload's local API now also in the public pages); recheck after Phase 1
+- [x] Bundle under 10MB compressed — size: 3.68 MB gzipped, confirmed by the first deploy (2026-10-30); 4.20 MB after chunk 2b (Payload's local API now also in the public pages); 4,243 KiB gzipped after Phase 1 (`wrangler deploy --dry-run`, 2026-10-31)
 - [ ] Cold start from Japan — time: ___
 - [ ] Page cache: second visit doesn't call Payload (log it); an admin save clears it; `ja` and `en` cached separately; `revalidations` table created by deploy — `revalidations` created (2026-10-30). **First live check failed:** every visit to `/` returns `x-nextjs-cache: STALE` and logs "Failed to revalidate stale page /en — Dummy queue is not implemented". Cause: pages rendered on first visit aren't in the prerender manifest, and Next then assumes revalidate after 1 second unless the same instance rendered them (Workers instances don't share that memory). Known OpenNext bug ([opennextjs-aws#1250](https://github.com/opennextjs/opennextjs-aws/issues/1250)), fixed in #1317, not released yet: upgrade `@opennextjs/cloudflare` when a release includes it, then re-check (B08 Known issue)
 - [x] `proxy.ts` works on OpenNext (language switches correctly). If not: rename to `middleware.ts` — passed on workers.dev 2026-10-30: all language rules, cookie, localized 404s, `/ja` → 307 to `/`, `/admin` and `/api` untouched
 - [x] Ids never reused: create 1–3, delete 3, create one → it gets 4 (on `media` in Phase 0; `artworks` again in Phase 1 — B02) — passed locally 2026-10-28: got 4. Recheck on the real D1 after the first deploy
 - [x] Images binding works on `workers.dev` (one test transform) — all six sizes on Cloudflare via `wrangler dev --remote`, no zone needed (2026-10-30). Two live-vs-local differences recorded in B05
-- [ ] Payload admin can: redirect dashboard → artworks, hide collections from nav, change delete confirm text (B07)
+- [x] Payload admin can: redirect dashboard → artworks, hide collections from nav, change delete confirm text (B07) — all three in place, checked by e2e (2026-10-30)
 - [ ] **Phase check:** everything above passes, or the spec is updated with what changed
 
 ---
@@ -67,39 +67,50 @@ The risky assumptions get proven here. If one fails, update the spec before movi
 - [x] `media`: R2 under `media/`, JPG/PNG/WebP, `upload.limits.fileSize: 20_000_000` (B05) — also: `alt` removed, read access logged-in only (originals were public via `/api/media/file`)
 - [x] `users`: one account per person (Steffan, artist), forgot-password off (B01) — link hidden via admin CSS; the artist's account is created with `seed-admin:remote` once live login works
 - [x] Ids never reused on `artworks`: repeat the Phase 0 test (B02) — permanent test `tests/int/artworks-ids.int.spec.ts`, passes locally; recheck on the real D1 with the Phase 0 one
-- [ ] Migrations generated and applied — `20261030_182139_collections` generated (2026-10-30; regenerated when collections got two required names). Applied to the real D1 by the next `pnpm run deploy`
+- [ ] Migrations generated and applied — `20261030_192738_collections` generated (2026-10-30; regenerated for the collection name pair, the artwork JA/EN text pairs and `media.inUse`). Applied to the real D1 by the next `pnpm run deploy`
 
 **Hooks**
 - [x] Status hook computes `status` and `missing` (B02) — on the whole work, so a Live-only save is right (2026-10-30)
-- [x] Deleting a `media` used as a `mainImage` takes the work off the site (`incomplete`, Live left on) — changed from "blocked" (B02, 2026-10-30)
+- [x] Deleting a `media` used as a `mainImage` takes the work off the site (`incomplete`, Live turned off) — changed from "blocked" (B02, 2026-10-30); Live turned off since the hand test
 - [x] `searchText` filled with both titles; `listSearchableFields: ['searchText']` (B07)
 - [x] Revalidation: `artworks`, `media`, `series` → `works`; skipped when `context.skipRevalidate` (B08)
 - [x] Collection slug from the English name, made unique (B02)
 - All five: unit + `tests/int/hooks.int.spec.ts`, pass locally (2026-10-30)
 
 **Images** (B05)
-- [x] `config/images.ts` sizes; `lib/images.ts` URL builder — every artwork image gets all six sizes (B05, 2026-10-30)
+- [x] `config/images.ts` sizes; `lib/images.ts` URL builder — every artwork image gets all seven sizes (B05, 2026-10-30; `preview` added after the hand test)
 - [x] `beforeChange`: all sizes via the binding, kept in `req.context`; throw on failure — plus our own 100 MP / 50,000px check first
 - [x] Orientation fix: compare `lg` output shape with stored width/height, swap if different
 - [x] `afterChange`: write `derived/{collection}/{id}/{size}.webp`
 - [x] `afterDelete`: delete original + derived files — original by the R2 plugin, derived by ours
 - [x] Image route `/img/{collection}/{id}/{size}?v=`: checks, R2 read, rebuilds a missing size, cache headers — `media` only until globe photos
-- [x] Admin thumbnails use `thumb` through `/img`
+- [x] Admin previews use `preview` (whole image within 400×400) through `/img`; the artworks table uses `thumb`
 - All of the above: unit + `tests/int/images.int.spec.ts` + e2e, pass locally with the local Images binding (2026-10-30)
 - [ ] Verify: portrait phone JPEG → all sizes upright, no EXIF, stored dimensions portrait — binding part confirmed on Cloudflare (upright, no EXIF); the stored-dimensions swap passes locally (`tests/int/images.int.spec.ts`). Live check after deploy
 - [ ] Verify: an oversized file is rejected with a clear message — Cloudflare's limit is 100 MP / 50,000px (error 9413); the local runtime has none, so the hook checks the limit itself (B05). Passes locally; live check after deploy
 
 **Admin UI** (B07)
-- [ ] `/admin` opens on the artworks table; nav: Artworks · Review queue · Submissions · Collections
-- [ ] Admin colors; EN/JA field labels; delete confirm says it can't be recovered
-- [ ] Artworks table: quick filters, custom cells (thumb, title, price, status with what's missing, updated, ⋯ menu), empty state
-- [ ] Artwork form in Payload's layout: sidebar (Live, status note, Collections) + sections (Images, Matching, Content); price/year validation
-- [ ] **Decision:** stock form layout good enough, or build custom 9c? → ___
+- [x] `/admin` opens on the artworks table; nav: Artworks · Collections · Images under one heading (Review queue, Submissions come with the globe); Accounts hidden (2026-10-30)
+- [ ] Admin colors; EN/JA field labels; delete confirm says it can't be recovered — labels and delete text done; colors still Payload's dark theme (decided), light admin colors later
+- [x] Artworks table: quick filters, custom cells (thumb, title, price, status, updated, ⋯ menu), empty state (stock, kept)
+- [x] Artwork form in Payload's layout: sidebar (Live switch, live status note, Collections) + sections (Images, Matching, Content); price/year validation. Text as JA/EN pairs side by side, Payload localization removed (B02)
+- [x] Images: Unused filter (`media.inUse`), "used by" lists on each image
+- All of the above: unit + int + `tests/e2e/admin.e2e.spec.ts`, pass locally (2026-10-30)
+- [x] **First hand-test pass** (Steffan, 2026-10-30) — fixed (B02, B05, B07, D09):
+  - Status: a work with anything missing is **Incomplete** and can't be Live (Live off no longer hides gaps); the hook turns Live off, incl. when its main image is deleted. Live is a "Show on the site" switch, greyed out until complete; table says just "Incomplete"; ⋯ Show greyed out
+  - Wording: refused-save toast "Please fill in or fix:"; wrong file type / over 20 MB stopped when picked, with a clear message (was "invalid: file" / "NetworkError")
+  - Images: previews show the whole image (`preview` size); adding an image is just choosing the file (Upload button on the work's image fields, Create new saves on pick); Bulk upload off
+  - Item pages: no Edit/API tabs, no ⋮ menu, no Duplicate; Delete button after Save
+  - Collections: "Works in this collection" on each collection's page
+  - Unit + int + e2e for all of it, pass locally (2026-10-31)
+- [ ] **Decision:** stock form layout good enough, or build custom 9c? → kept stock through the first hand-test pass; confirm
 - [ ] **Phase check:** the artist can log in and add test works
 
 ---
 
 ## Phase 2 — Artwork page and All Works (D05, D06)
+
+- [ ] **Before styling the first page:** decide Tailwind (v4, `tokens.css` mapped into its theme) or plain CSS for the public site. The admin keeps `custom.scss` (admin only; Tailwind's reset clashes with Payload's admin)
 
 - [ ] Artwork detail: stacked on mobile; 60/40 on desktop with sticky text (D05)
 - [ ] Fields in order; empty ones not rendered; image + price alone looks finished (D05)

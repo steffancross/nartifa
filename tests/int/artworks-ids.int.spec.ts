@@ -25,13 +25,13 @@ describe('artworks ids', () => {
 
   it('are never reused after deleting the newest work', async () => {
     for (let i = 1; i <= 3; i++) {
-      const work = await payload.create({ collection: 'artworks', data: { title: `id test ${i}` }, context })
+      const work = await payload.create({ collection: 'artworks', data: { titleJa: `id test ${i}` }, context })
       created.push(work.id)
     }
     const newest = created[2]
     await payload.delete({ collection: 'artworks', id: newest, context })
 
-    const next = await payload.create({ collection: 'artworks', data: { title: 'id test 4' }, context })
+    const next = await payload.create({ collection: 'artworks', data: { titleJa: 'id test 4' }, context })
     created.push(next.id)
 
     expect(next.id).toBeGreaterThan(newest)

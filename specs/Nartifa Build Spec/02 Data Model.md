@@ -1,29 +1,30 @@
 # 02 Data Model
 
-All Payload collections live in D1. Files live in R2. Fields marked **loc** are Payload localized fields with `ja` (default) and `en` values.
+All Payload collections live in D1. Files live in R2.
 
-Payload localization: locales `ja`, `en`; default `ja`; fallback on (see 03 for how fallback is detected per field).
+**Text in two languages is a plain pair of fields — Decided (2026-10-30):** `titleJa` + `titleEn`, and so on. Payload's localization is **not used**: its form shows one language at a time behind a switcher, while the design (9c) has both side by side, and the site picks per field in its own code anyway (03). With pairs, Payload's stock form shows both at once, and hooks read both languages without a second lookup. Payload's `localization` config is removed, so there are no `_locales` tables.
 
 ## `artworks`
 
 | Field | Type | Notes |
 | --- | --- | --- |
 | `id` | number (auto) | **Used as the URL slug**: `/works/12`. Permanent: never changes, never reused — see Permanent links below |
-| `live` | checkbox | The artist's toggle — what they *want*. Only the artist changes it; no hook ever unticks it |
+| `live` | checkbox | The artist's switch, "Show on the site". Can only be on when nothing required is missing: the form greys it out, and the status hook turns it off on any save that leaves something missing (Status rule) |
 | `status` | select, read-only | Computed on save: `live` / `hidden` / `incomplete` |
 | `missing` | text list, read-only | Computed on save, e.g. `["smell", "feeling", "mainImage"]` |
 | `sight` `smell` `taste` `touch` `hearing` | select: `a` / `b` | Words come from i18n (`quiz.sight.a` = "nature"…) |
 | `feeling` | select: `joy` / `anger` / `sorrow` / `delight` | |
-| `mainImage` | upload → `media` | |
-| `extraImages` | upload → `media`, many, ordered | Drag to reorder |
-| `title` | text, **loc** | |
-| `description` | textarea, **loc** | Plain text; blank lines = paragraphs (Proposed) |
+| `mainImage` | upload → `media` | Picking or dropping a file uploads it straight into the field (07) |
+| `extraImages` | upload → `media`, many, ordered | Drag to reorder. Several files can be uploaded at once (07) |
+| `titleJa`, `titleEn` | text | Either may be empty; a work can go live with one language |
+| `description` `Ja` / `En` | textarea | Plain text; blank lines = paragraphs (Proposed) |
 | `price` | number, whole | JPY. Empty = "Price on request" |
-| `size` | text | **Not localized** — one shared value |
-| `materials` | text, **loc** | |
-| `medium` | text, **loc** | |
+| `size` | text | One shared value, not per language |
+| `materials` `Ja` / `En` | text | |
+| `medium` `Ja` / `En` | text | |
 | `year` | number | 4 digits |
 | `series` | relationship → `series`, many | Labelled "Collections". Can create a new collection from the field |
+| `displayTitle` | text, hidden, read-only | `titleJa`, else `titleEn`. The work's name everywhere in the admin (table, form header, pickers). Filled by the hook |
 | `searchText` | text, hidden, read-only | Both titles, lower-cased, for admin search (07). Filled by the hook |
 | `createdAt` / `updatedAt` | auto | `createdAt` = "date added", used for "newest first" |
 
@@ -34,15 +35,18 @@ Computed in a `beforeChange` hook, so it can be filtered and sorted:
 ```
 required = [sight, smell, taste, touch, hearing, feeling, mainImage]
 missing  = required fields that are empty
-status   = !live            → hidden
-           missing nonEmpty → incomplete
+status   = missing nonEmpty → incomplete   (and live is turned off)
+           !live            → hidden
            otherwise        → live
 ```
+
+**Changed 2026-10-30 (hand test):** a work with anything missing is `incomplete` whether or not Live is on, and it can't be Live. Before, Live off always meant `hidden`, so a half-filled work never showed under the Incomplete filter, and Live could be ticked on an unfinished work.
 
 - Only `status = live` works appear on the public site and in matching.
 - The required list is one array in code (`src/config/artworks.ts`, `REQUIRED_FIELDS`); the rule is `computeStatus` in `src/lib/artwork-status.ts`. Changing what is required means editing that array and re-saving.
 - The hook runs on the **whole** work (stored document + the change), so a save that only flips Live still sees every other field.
-- **Deleting an image is always allowed — Decided (2026-10-30).** A work that used it as its main image comes off the site: a `beforeDelete` hook on `media` notes which works use it, and an `afterDelete` hook re-saves each with no main image, so it becomes `incomplete` with `mainImage` missing. **Live stays ticked**, so choosing a new main image puts the work straight back, the same as when any other required field is cleared. (The database empties the field by itself — `main_image_id … ON DELETE set null` — but that alone wouldn't recompute the stored status.) Extra images need nothing: the database drops a deleted image from the list, and they don't affect status. Code: `src/hooks/media.ts`.
+- **Live is turned off by the hook** whenever something is missing, whatever the save came from: the form, the ⋯ menu, the API, or a deleted main image. In the form the switch is already greyed out and turns itself off when a required field is emptied (07). Once the work is complete again, the artist turns Live back on herself.
+- **Deleting an image is always allowed — Decided (2026-10-30).** A work that used it as its main image comes off the site: a `beforeDelete` hook on `media` notes which works use it, and an `afterDelete` hook re-saves each with no main image, so it becomes `incomplete` with `mainImage` missing and **Live turned off** (changed the same day after the hand test; it used to stay ticked). (The database empties the field by itself — `main_image_id … ON DELETE set null` — but that alone wouldn't recompute the stored status.) Extra images need nothing: the database drops a deleted image from the list, and they don't affect status. Code: `src/hooks/media.ts`.
 
 ### Permanent links — Decided
 
@@ -71,6 +75,7 @@ The artist and the design call these **collections**. In code the slug is `serie
 | `nameJa` | text, required | Japanese name |
 | `nameEn` | text, required | English name |
 | `slug` | text, unique, read-only | From `nameEn`; for the future collection graphic |
+| `works` | join → `artworks.series` | Not stored. "Works in this collection" on the collection's page (07) |
 
 Not shown on the public site in v1 (the graphic is paused). Built now so the data is ready.
 
@@ -78,7 +83,7 @@ Not shown on the public site in v1 (the graphic is paused). Built now so the dat
 
 **Slug — Decided (2026-10-30):** made from the English name by `slugify` (`src/lib/slug.ts`): lower-case, accents dropped, anything else that isn't a–z or 0–9 becomes `-` ("Night Garden (II)" → `night-garden-ii`); `collection` if nothing is left. A clash gets `-2`, `-3`…. It **follows the English name** on every save (`src/hooks/series.ts`), since nothing links to it yet. When the graphic ships and slugs appear in URLs, decide whether to freeze them like work ids.
 
-**In the repo (2026-10-30):** `src/collections/Series.ts` and `src/collections/Artworks.ts`, migration `20261030_182139_collections` (both main tables `AUTOINCREMENT`; checked by `tests/int/artworks-ids.int.spec.ts`). `missing` is a Payload `text` field with `hasMany` (stored in `artworks_texts`). The six select fields store the keys from `src/config/quiz.ts`; their admin labels are read from `quiz.*` in `ja.json`/`en.json` (`src/i18n/admin-labels.ts`). The migration was regenerated (first generated as `20261030_155951_collections`) when `series.name` became `nameJa` / `nameEn` (it had never reached the real D1).
+**In the repo (2026-10-30):** `src/collections/Series.ts` and `src/collections/Artworks.ts`, migration `20261030_192738_collections` (both main tables `AUTOINCREMENT`; checked by `tests/int/artworks-ids.int.spec.ts`). `missing` is a Payload `text` field with `hasMany` (stored in `artworks_texts`). The six select fields store the keys from `src/config/quiz.ts`; their admin labels are read from `quiz.*` in `ja.json`/`en.json` (`src/i18n/admin-labels.ts`). The migration has been regenerated three times before reaching the real D1 (`…155951`, `…182139`, `…191428`): for the collection name pair, the artwork text pairs (with Payload localization removed), and `media.inUse`.
 
 **Hooks in the repo (2026-10-30):** `src/hooks/artworks.ts` (status, missing, searchText), `src/hooks/media.ts` (main image delete), `src/hooks/series.ts` (slug). Unit tests for the pure functions; `tests/int/hooks.int.spec.ts` checks each hook against the local database.
 
@@ -91,11 +96,15 @@ Payload upload collection, stored in R2 under `media/`.
 | `width`, `height` | number | Filled by Payload from the file header (no `sharp` needed — checked). Swapped by our hook for rotated phone photos (05) |
 | `filename`, `mimeType`, `filesize` | auto | |
 
-- Accepted: JPG, PNG, WebP. Max 20MB (Proposed).
+- Accepted: JPG, PNG, WebP. Max 20 MB (the Images binding's input limit). Both limits are `UPLOAD_LIMITS` in `src/config/images.ts`, checked in the browser before anything is sent and again on the server, with a clear message for each (05).
 - No `sharp` resizing — sizes are made by the Images binding at upload and stored under `derived/` (05).
-- No alt field — alt text is generated (05). (The template's required `alt` was dropped in migration `20261030_182139_collections`.)
+- No alt field — alt text is generated (05). (The template's required `alt` was dropped in migration `20261030_192738_collections`.)
 - **Read access: logged-in admins only.** The template allowed anyone, which let `/api/media/file/<name>` serve full-resolution originals (05, Privacy). Public pages use Payload's local API, which skips access rules, so the site is unaffected.
 - Stored under `media/` via the R2 plugin's `prefix` option, which adds a `prefix` column (default `'media'`).
+- `inUse` (checkbox, read-only): whether any work uses the image as its main or an extra image. Kept up to date by the artwork hooks (`src/hooks/image-usage.ts`) on every save and delete, written straight to the database with the image's old `updatedAt`, so its `/img` version doesn't change. Behind the **Unused** filter on the Images list (07).
+- `usedAsMain`, `usedAsExtra`: Payload join fields (virtual, nothing stored) listing the works that use the image, shown on the image's page. Not used for the filter: Payload's filter panel can't show a filter on a join field and throws.
+- `inUse`, `usedAsMain` and `usedAsExtra` are hidden on a new image's page until it's saved (they'd be empty). A new image saves itself as soon as its file is chosen (07).
+- `bulkUpload: false`: one image at a time, always (decided 2026-10-30).
 
 ## `globe-photos`
 

@@ -5,16 +5,25 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	\`id\` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
   	\`live\` integer DEFAULT false,
   	\`status\` text DEFAULT 'hidden',
+  	\`main_image_id\` integer,
   	\`sight\` text,
   	\`smell\` text,
   	\`taste\` text,
   	\`touch\` text,
   	\`hearing\` text,
   	\`feeling\` text,
-  	\`main_image_id\` integer,
+  	\`title_ja\` text,
+  	\`title_en\` text,
+  	\`description_ja\` text,
+  	\`description_en\` text,
   	\`price\` numeric,
   	\`size\` text,
   	\`year\` numeric,
+  	\`materials_ja\` text,
+  	\`materials_en\` text,
+  	\`medium_ja\` text,
+  	\`medium_en\` text,
+  	\`display_title\` text,
   	\`search_text\` text,
   	\`updated_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL,
   	\`created_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL,
@@ -24,19 +33,6 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   await db.run(sql`CREATE INDEX \`artworks_main_image_idx\` ON \`artworks\` (\`main_image_id\`);`)
   await db.run(sql`CREATE INDEX \`artworks_updated_at_idx\` ON \`artworks\` (\`updated_at\`);`)
   await db.run(sql`CREATE INDEX \`artworks_created_at_idx\` ON \`artworks\` (\`created_at\`);`)
-  await db.run(sql`CREATE TABLE \`artworks_locales\` (
-  	\`title\` text,
-  	\`description\` text,
-  	\`materials\` text,
-  	\`medium\` text,
-  	\`id\` integer PRIMARY KEY NOT NULL,
-  	\`_locale\` text NOT NULL,
-  	\`_parent_id\` integer NOT NULL,
-  	FOREIGN KEY (\`_parent_id\`) REFERENCES \`artworks\`(\`id\`) ON UPDATE no action ON DELETE cascade
-  );
-  `)
-  await db.run(sql`CREATE UNIQUE INDEX \`artworks_locales_locale_parent_id_unique\` ON \`artworks_locales\` (\`_locale\`,\`_parent_id\`);`)
-  await db.run(sql`CREATE INDEX \`artworks_locales_parent_id_idx\` ON \`artworks_locales\` (\`_parent_id\`);`)
   await db.run(sql`CREATE TABLE \`artworks_texts\` (
   	\`id\` integer PRIMARY KEY NOT NULL,
   	\`order\` integer NOT NULL,
@@ -52,18 +48,18 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	\`order\` integer,
   	\`parent_id\` integer NOT NULL,
   	\`path\` text NOT NULL,
-  	\`media_id\` integer,
   	\`series_id\` integer,
+  	\`media_id\` integer,
   	FOREIGN KEY (\`parent_id\`) REFERENCES \`artworks\`(\`id\`) ON UPDATE no action ON DELETE cascade,
-  	FOREIGN KEY (\`media_id\`) REFERENCES \`media\`(\`id\`) ON UPDATE no action ON DELETE cascade,
-  	FOREIGN KEY (\`series_id\`) REFERENCES \`series\`(\`id\`) ON UPDATE no action ON DELETE cascade
+  	FOREIGN KEY (\`series_id\`) REFERENCES \`series\`(\`id\`) ON UPDATE no action ON DELETE cascade,
+  	FOREIGN KEY (\`media_id\`) REFERENCES \`media\`(\`id\`) ON UPDATE no action ON DELETE cascade
   );
   `)
   await db.run(sql`CREATE INDEX \`artworks_rels_order_idx\` ON \`artworks_rels\` (\`order\`);`)
   await db.run(sql`CREATE INDEX \`artworks_rels_parent_idx\` ON \`artworks_rels\` (\`parent_id\`);`)
   await db.run(sql`CREATE INDEX \`artworks_rels_path_idx\` ON \`artworks_rels\` (\`path\`);`)
-  await db.run(sql`CREATE INDEX \`artworks_rels_media_id_idx\` ON \`artworks_rels\` (\`media_id\`);`)
   await db.run(sql`CREATE INDEX \`artworks_rels_series_id_idx\` ON \`artworks_rels\` (\`series_id\`);`)
+  await db.run(sql`CREATE INDEX \`artworks_rels_media_id_idx\` ON \`artworks_rels\` (\`media_id\`);`)
   await db.run(sql`CREATE TABLE \`series\` (
   	\`id\` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
   	\`name_ja\` text NOT NULL,
@@ -76,6 +72,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   await db.run(sql`CREATE UNIQUE INDEX \`series_slug_idx\` ON \`series\` (\`slug\`);`)
   await db.run(sql`CREATE INDEX \`series_updated_at_idx\` ON \`series\` (\`updated_at\`);`)
   await db.run(sql`CREATE INDEX \`series_created_at_idx\` ON \`series\` (\`created_at\`);`)
+  await db.run(sql`ALTER TABLE \`media\` ADD \`in_use\` integer DEFAULT false;`)
   await db.run(sql`ALTER TABLE \`media\` ADD \`prefix\` text DEFAULT 'media';`)
   await db.run(sql`ALTER TABLE \`media\` DROP COLUMN \`alt\`;`)
   await db.run(sql`ALTER TABLE \`payload_locked_documents_rels\` ADD \`artworks_id\` integer REFERENCES artworks(id);`)
@@ -86,7 +83,6 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
 
 export async function down({ db, payload, req }: MigrateDownArgs): Promise<void> {
   await db.run(sql`DROP TABLE \`artworks\`;`)
-  await db.run(sql`DROP TABLE \`artworks_locales\`;`)
   await db.run(sql`DROP TABLE \`artworks_texts\`;`)
   await db.run(sql`DROP TABLE \`artworks_rels\`;`)
   await db.run(sql`DROP TABLE \`series\`;`)
@@ -113,5 +109,6 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_users_id_idx\` ON \`payload_locked_documents_rels\` (\`users_id\`);`)
   await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_media_id_idx\` ON \`payload_locked_documents_rels\` (\`media_id\`);`)
   await db.run(sql`ALTER TABLE \`media\` ADD \`alt\` text NOT NULL;`)
+  await db.run(sql`ALTER TABLE \`media\` DROP COLUMN \`in_use\`;`)
   await db.run(sql`ALTER TABLE \`media\` DROP COLUMN \`prefix\`;`)
 }

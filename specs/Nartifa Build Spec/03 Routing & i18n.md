@@ -68,7 +68,7 @@ Switching later then means changing `localePrefix` to `'always'` and adding redi
 ## Artwork content and fallback — Decided
 
 - Missing English → show Japanese (accepted: many works will be Japanese-only).
-- Fetch artworks with `locale: 'all'` and pick per field in code, rather than relying on Payload's silent fallback. This tells us which language each field is in.
+- Each text is stored as a JA/EN pair of plain fields (`titleJa` / `titleEn`…, 02), so a read returns both, and the code picks per field — `pick({ ja: work.titleJa, en: work.titleEn }, lang)`. This tells us which language each field is in. (Payload localization isn't used.)
 - A field shown in Japanese on an English page is wrapped with `lang="ja"`, so the 1.8 line height and screen-reader pronunciation are correct.
 
 ```

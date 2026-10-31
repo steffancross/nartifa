@@ -4,13 +4,14 @@ import { IMAGE_COLLECTIONS, IMAGE_SIZES, ORIENTATION_SIZE } from '@/config/image
 import {
   derivedKey,
   exceedsPixelLimit,
+  fileProblem,
   imageUrl,
   needsOrientationSwap,
   parseImagePath,
 } from '@/lib/images'
 
 describe('image config (Build Spec 05)', () => {
-  it('artwork images get all six sizes', () => {
+  it('artwork images get every size', () => {
     expect([...IMAGE_COLLECTIONS.media].sort()).toEqual(Object.keys(IMAGE_SIZES).sort())
   })
 
@@ -85,5 +86,22 @@ describe('needsOrientationSwap', () => {
   it('squares and missing values → no swap', () => {
     expect(needsOrientationSwap({ width: 500, height: 500 }, { width: 500, height: 500 })).toBe(false)
     expect(needsOrientationSwap({ width: null, height: 10 }, { width: 10, height: 20 })).toBe(false)
+  })
+})
+
+describe('fileProblem (upload check, Build Spec 05)', () => {
+  it('accepts JPG, PNG and WebP up to 20 MB', () => {
+    expect(fileProblem({ name: 'a.jpg', type: 'image/jpeg', size: 20_000_000 })).toBeNull()
+    expect(fileProblem({ name: 'a.webp', type: 'image/webp', size: 1 })).toBeNull()
+  })
+
+  it('refuses other types, by extension when the browser gives none', () => {
+    expect(fileProblem({ name: 'a.heic', type: 'image/heic', size: 1 })).toBe('wrongType')
+    expect(fileProblem({ name: 'a.HEIC', type: '', size: 1 })).toBe('wrongType')
+    expect(fileProblem({ name: 'a.PNG', type: '', size: 1 })).toBeNull()
+  })
+
+  it('refuses files over 20 MB', () => {
+    expect(fileProblem({ name: 'a.jpg', type: 'image/jpeg', size: 20_000_001 })).toBe('tooBig')
   })
 })

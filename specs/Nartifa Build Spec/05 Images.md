@@ -32,7 +32,7 @@ Payload's usual `sharp` resizing is not used (it can't run in Workers).
 - The R2 plugin deletes the original on delete; our `afterDelete` removes `derived/{collection}/{id}/`.
 - Writes to R2 go as a `Blob`: a typed array doesn't survive the local dev proxy (workers-sdk#6047; the R2 plugin does the same).
 - The route's rebuild finds the original with one plain D1 query (`SELECT filename, prefix FROM media WHERE id = ?`; key `{prefix}/{filename}`), with no Payload.
-- **Admin thumbnails** use `thumb` through the route (`upload.adminThumbnail`), so admin lists never load the original.
+- **Admin previews** use `preview` through the route (`upload.adminThumbnail`), so the admin never loads the original and never crops an image (changed from `thumb` 2026-10-30, hand test: the image page showed a square crop). `custom.scss` shows Payload's previews uncropped too. The artworks table keeps its 40px square from `thumb`.
 - The rejection messages are `admin.images.tooLarge` / `admin.images.failed` in `ja.json` / `en.json`, shown in the admin's language.
 - The binding works in `pnpm dev` and tests through wrangler's local proxy (checked 2026-10-30), so the whole pipeline is tested locally: `tests/int/images.int.spec.ts` (sizes, orientation, 144 MP rejection, replace, delete, route serve/rebuild/404s) and `tests/e2e/media-access.e2e.spec.ts` (`/img` public through the dev server).
 
@@ -53,7 +53,8 @@ All output **WebP, quality 85.** Cloudflare's docs state WebP output always disc
 
 | Name | Size | Fit (binding `fit`) | Used for |
 | --- | --- | --- | --- |
-| `thumb` | 200×200 | `cover` — exact square | Thumbnails under the main image (5e), admin tables, review queue |
+| `thumb` | 200×200 | `cover` — exact square | Thumbnails under the main image (5e), artworks table, review queue |
+| `preview` | within 400×400 | `scale-down` — whole image, never cropped or upscaled | Admin image previews (image page, Images list, image fields on a work) |
 | `card` | 600×600 | `cover` — exact square | All Works grid (mobile and desktop) |
 | `md` | 800 wide | `scale-down` — natural shape, never upscaled | Artwork and globe photo on phones |
 | `lg` | 1600 wide | `scale-down` | Artwork on desktop, reveal, globe photo on desktop |
@@ -62,7 +63,8 @@ All output **WebP, quality 85.** Cloudflare's docs state WebP output always disc
 
 | Name | Size | Fit | Used for |
 | --- | --- | --- | --- |
-| `thumb` | 200×200 | square crop | Thumbnails under the main image (5e), admin tables, review queue |
+| `thumb` | 200×200 | square crop | Thumbnails under the main image (5e), artworks table, review queue |
+| `preview` | within 400×400 | whole image | Admin image previews |
 | `card` | 600×600 | square crop | All Works grid (mobile and desktop) |
 | `md` | 800 wide | natural shape | Artwork and globe photo on phones |
 | `lg` | 1600 wide | natural shape | Artwork on desktop, reveal, globe photo on desktop |
@@ -77,13 +79,13 @@ Artwork and photo views use `srcset` with `md` and `lg` (`sizes` set per layout)
 
 | Image | Sizes |
 | --- | --- |
-| Artwork images (`media`), main or extra | all six — Decided 2026-10-30: an image doesn't know at upload whether it will be a main or an extra image, and the artist can swap them later |
+| Artwork images (`media`), main or extra | all seven — Decided 2026-10-30: an image doesn't know at upload whether it will be a main or an extra image, and the artist can swap them later |
 | Globe photos | `thumb`, `md`, `lg` |
 | Landing image | none — a static file in the code, sized by hand |
 
 ### Cost check
 
-Transformations happen only at upload, so this is a count of uploads, not of visits. About 100 works × 4 images × 6 sizes ≈ 2,400 in total, spread over the months the artist uploads, plus 4 per globe photo (clean copy + 3 sizes). The first 5,000 unique transformations each month are included. Adding a size means one transformation per existing image the first time it's requested — check the count before adding.
+Transformations happen only at upload, so this is a count of uploads, not of visits. About 100 works × 4 images × 7 sizes ≈ 2,800 in total, spread over the months the artist uploads, plus 4 per globe photo (clean copy + 3 sizes). The first 5,000 unique transformations each month are included. Adding a size means one transformation per existing image the first time it's requested — check the count before adding.
 
 ## Privacy and access — Decided
 
@@ -146,6 +148,12 @@ Generated, no admin field:
 | | Artworks (admin) | Globe photos (visitors) |
 | --- | --- | --- |
 | Types | JPG, PNG, WebP | JPG, PNG, WebP (iPhone Safari converts HEIC to JPEG) |
-| Max size | 20MB — Payload `upload.limits.fileSize: 20_000_000`. Matches the Images binding's 20 MB input limit | 5MB on the server; the browser re-encodes first (see 06) |
+| Max size | 20MB — Payload `upload.limits.fileSize`, from `UPLOAD_LIMITS` in `src/config/images.ts`. Matches the Images binding's 20 MB input limit. Checked in the browser before sending (see below) | 5MB on the server; the browser re-encodes first (see 06) |
 | Too large in pixels for the binding (over 100 megapixels or a side over 50,000px — checked above) | Upload rejected at the generate-sizes step, with a message to export a smaller file | Not possible — browser caps the long side at 2400px |
 | Metadata | Stripped on output (WebP drops all metadata) | Stripped in the browser, **and** the server stores only its own WebP re-encode, never the visitor's bytes (06) |
+
+**Artwork upload checks in the admin (2026-10-30, hand test).** A file over 20 MB used to fail with only "NetworkError": the server refuses it (413) within a fraction of a second, but the browser is still sending and only sees the connection drop. And a HEIC file got Payload's "The following field is invalid: file". Now:
+- `src/admin/UploadGuard.tsx` (an admin provider) checks every picked or dropped file before Payload sees it: not JPG/PNG/WebP, or over 20 MB → a toast saying why, and the file goes nowhere. It listens on `window` in the capture phase, so it also covers Payload's own drop zones.
+- `src/admin/media/FileCheck.tsx` (a ui field in the image form) does the same for a file that arrives another way (pasted, "Paste URL").
+- `checkUploadedFile` (`beforeOperation` on `media`, `src/hooks/media.ts`) refuses the same files on the server, with the same message, for anything that gets past the browser.
+- The check is `fileProblem` in `src/lib/images.ts`; messages `admin.upload.wrongType` / `tooBig` in `ja.json` / `en.json`. The pixel limit stays in the size hook (above).

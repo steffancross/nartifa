@@ -47,11 +47,12 @@ afterAll(async () => {
 })
 
 describe('artwork status', () => {
-  it('walks hidden → incomplete → live as the work fills in', async () => {
-    const work = await createWork({ title: 'status test' })
-    expect(work.status).toBe('hidden')
+  it('walks incomplete → hidden → live as the work fills in', async () => {
+    const work = await createWork({ titleJa: 'status test' })
+    expect(work.status).toBe('incomplete')
     expect(work.missing).toHaveLength(7)
 
+    // Live can't be turned on while anything is missing
     const liveWithGaps = await payload.update({
       collection: 'artworks',
       id: work.id,
@@ -59,12 +60,27 @@ describe('artwork status', () => {
       context,
     })
     expect(liveWithGaps.status).toBe('incomplete')
+    expect(liveWithGaps.live).toBe(false)
     expect(liveWithGaps.missing).toEqual(['mainImage'])
 
     const mainImage = await createImage('status-test.png')
     const complete = await payload.update({ collection: 'artworks', id: work.id, data: { mainImage }, context })
-    expect(complete.status).toBe('live')
+    expect(complete.status).toBe('hidden')
     expect(complete.missing).toEqual([])
+
+    const live = await payload.update({ collection: 'artworks', id: work.id, data: { live: true }, context })
+    expect(live.status).toBe('live')
+  })
+
+  it('emptying a required field on a live work turns Live off', async () => {
+    const mainImage = await createImage('empty-field-test.png')
+    const work = await createWork({ ...senses, mainImage, live: true })
+    expect(work.status).toBe('live')
+
+    const after = await payload.update({ collection: 'artworks', id: work.id, data: { smell: null }, context })
+    expect(after.status).toBe('incomplete')
+    expect(after.live).toBe(false)
+    expect(after.missing).toEqual(['smell'])
   })
 
   it('a save that only flips Live still sees every other field', async () => {
@@ -82,7 +98,7 @@ describe('artwork status', () => {
 })
 
 describe('deleting a main image', () => {
-  it('takes the work off the site but leaves Live ticked', async () => {
+  it('makes the work incomplete and turns Live off', async () => {
     const mainImage = await createImage('delete-main-test.png')
     const extra = await createImage('delete-extra-test.png')
     const work = await createWork({ ...senses, mainImage, extraImages: [extra], live: true })
@@ -92,14 +108,14 @@ describe('deleting a main image', () => {
 
     const after = await payload.findByID({ collection: 'artworks', id: work.id, depth: 0 })
     expect(after.mainImage).toBeNull()
-    expect(after.live).toBe(true)
+    expect(after.live).toBe(false)
     expect(after.status).toBe('incomplete')
     expect(after.missing).toEqual(['mainImage'])
     expect(after.extraImages).toEqual([extra])
 
-    // Choosing a new main image puts it straight back
+    // A new main image makes it complete again; the artist turns Live back on herself
     const back = await payload.update({ collection: 'artworks', id: work.id, data: { mainImage: extra }, context })
-    expect(back.status).toBe('live')
+    expect(back.status).toBe('hidden')
   })
 
   it('deleting an extra image leaves the work as it was', async () => {
@@ -115,25 +131,48 @@ describe('deleting a main image', () => {
   })
 })
 
-describe('artwork searchText', () => {
-  it('holds both titles after saving in ja then en', async () => {
-    const work = await createWork({ title: '夜の庭' })
+describe('image "In use"', () => {
+  const inUse = async (id: number) => (await payload.findByID({ collection: 'media', id, depth: 0 })).inUse
+
+  it('follows the works that use an image, as main or extra', async () => {
+    const main = await createImage('usage-main.png')
+    const extra = await createImage('usage-extra.png')
+    expect(await inUse(main)).toBe(false)
+
+    const work = await createWork({ mainImage: main, extraImages: [extra] })
+    expect(await inUse(main)).toBe(true)
+    expect(await inUse(extra)).toBe(true)
+
+    // Swapped: the old main image is free again, the extra is now the main one
+    await payload.update({ collection: 'artworks', id: work.id, data: { mainImage: extra, extraImages: [] }, context })
+    expect(await inUse(main)).toBe(false)
+    expect(await inUse(extra)).toBe(true)
+
+    // Still used by a second work after the first is deleted
+    await createWork({ extraImages: [extra] })
+    await payload.delete({ collection: 'artworks', id: work.id, context })
+    expect(await inUse(extra)).toBe(true)
+  })
+
+  it("doesn't change the image's updatedAt (its /img version)", async () => {
+    const id = await createImage('usage-version.png')
+    const before = (await payload.findByID({ collection: 'media', id })).updatedAt
+    await createWork({ mainImage: id })
+    expect((await payload.findByID({ collection: 'media', id })).updatedAt).toBe(before)
+  })
+})
+
+describe('artwork titles', () => {
+  it('searchText holds both titles; displayTitle is Japanese, else English', async () => {
+    const work = await createWork({ titleJa: '夜の庭' })
     expect(work.searchText).toBe('夜の庭')
+    expect(work.displayTitle).toBe('夜の庭')
 
-    const en = await payload.update({
-      collection: 'artworks',
-      id: work.id,
-      locale: 'en',
-      data: { title: 'Night Garden' },
-      context,
-    })
-    expect(en.searchText).toBe('夜の庭 night garden')
-    // …and the English title itself was stored in English (the hook's own lookup mustn't change the
-    // save's language)
-    const enTitle = await payload.findByID({ collection: 'artworks', id: work.id, locale: 'en', fallbackLocale: false })
-    expect(enTitle.title).toBe('Night Garden')
+    const both = await payload.update({ collection: 'artworks', id: work.id, data: { titleEn: 'Night Garden' }, context })
+    expect(both.searchText).toBe('夜の庭 night garden')
+    expect(both.displayTitle).toBe('夜の庭')
 
-    // Editing another field in either language keeps both
+    // Editing another field keeps both
     const other = await payload.update({ collection: 'artworks', id: work.id, data: { year: 2026 }, context })
     expect(other.searchText).toBe('夜の庭 night garden')
 
@@ -142,6 +181,14 @@ describe('artwork searchText', () => {
       const { docs } = await payload.find({ collection: 'artworks', where: { searchText: { like: term } } })
       expect(docs.map((d) => d.id)).toContain(work.id)
     }
+  })
+
+  it('an English-only work is shown by its English title', async () => {
+    const work = await createWork({ titleEn: 'Only English' })
+    expect(work.displayTitle).toBe('Only English')
+
+    const cleared = await payload.update({ collection: 'artworks', id: work.id, data: { titleEn: '' }, context })
+    expect(cleared.displayTitle).toBe('')
   })
 })
 
@@ -177,5 +224,30 @@ describe('collection slug', () => {
     await expect(
       payload.create({ collection: 'series', data: { nameJa: '名前だけ' } as never, context }),
     ).rejects.toThrow()
+  })
+})
+
+describe('collection works list', () => {
+  it("lists the works in a collection on the collection's page", async () => {
+    const series = await payload.create({ collection: 'series', data: { nameJa: '一覧', nameEn: 'Hooks Test List' }, context })
+    created.series.push(series.id)
+    const work = await createWork({ titleJa: 'list test', series: [series.id] })
+
+    const found = await payload.findByID({ collection: 'series', id: series.id, depth: 0 })
+    expect(found.works?.docs).toEqual([work.id])
+  })
+})
+
+describe('upload check', () => {
+  // Same messages as the admin shows before sending (src/admin/media/FileCheck.tsx)
+  const upload = (name: string, mimetype: string, size = png.length) =>
+    payload.create({ collection: 'media', data: {}, file: { data: png, mimetype, name, size }, context })
+
+  it('refuses a type other than JPG, PNG or WebP with a clear message', async () => {
+    await expect(upload('photo.heic', 'image/heic')).rejects.toThrow('Only JPG, PNG or WebP images can be uploaded')
+  })
+
+  it('refuses a file over 20 MB with a clear message', async () => {
+    await expect(upload('big.png', 'image/png', 20_000_001)).rejects.toThrow('This file is larger than 20 MB')
   })
 })

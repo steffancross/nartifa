@@ -64,7 +64,7 @@ Each phase ends with something usable on the live Worker. Design spec pages are 
 | Worker bundle under 10MB compressed, and cold-start time from Japan | Paid plan limit; first impression for Instagram visitors | 01 |
 | Page cache works end to end: second visit to a page doesn't call Payload (log it); an admin save clears it; `ja` and `en` cached separately; tag cache table created by `opennextjs-cloudflare deploy` | Whole caching design rests on this | 08 |
 | `autoIncrement: true` is set before the first migration, and works on D1: create works 1–3, delete 3, create one → it gets 4 | Ids are permanent URL slugs | 02 |
-| Image pipeline end to end on `workers.dev`: upload a portrait phone JPEG → all six sizes appear in `derived/`, upright, no EXIF in the output, stored width/height portrait; an oversized file is rejected with a message | Whole image design rests on this | 01, 05 |
+| Image pipeline end to end on `workers.dev`: upload a portrait phone JPEG → all seven sizes appear in `derived/`, upright, no EXIF in the output, stored width/height portrait; an oversized file is rejected with a message | Whole image design rests on this | 01, 05 |
 | Instagram DM link: pre-filled text possible? Opens the native DM (not a web login) from **inside Instagram's in-app browser** on iPhone and Android? | "Ask about this work", About, menu | 03 |
 | Payload admin: redirect dashboard → artworks, hide collections from nav, override delete text | Admin polish | 07 |
 

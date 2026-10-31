@@ -3,6 +3,7 @@ import {
   IMAGE_LIMITS,
   type ImageCollection,
   type ImageSize,
+  UPLOAD_LIMITS,
 } from '@/config/images'
 
 // Pure helpers for the image pipeline (Build Spec 05). No bindings here, so they're unit tested
@@ -44,6 +45,20 @@ export function parseImagePath(
   const sizes: readonly string[] = IMAGE_COLLECTIONS[collection as ImageCollection]
   if (!sizes.includes(size)) return null
   return { collection: collection as ImageCollection, id: Number(idText), size: size as ImageSize }
+}
+
+export type FileProblem = 'wrongType' | 'tooBig'
+
+// Why a chosen file can't be uploaded, if it can't: not JPG/PNG/WebP (by type, or by extension when
+// the browser gives no type), or over 20 MB. The keys are admin.upload.* in the i18n files
+export function fileProblem(file: { name: string; type?: string; size: number }): FileProblem | null {
+  const extension = file.name.split('.').pop()?.toLowerCase() ?? ''
+  const typeOk = file.type
+    ? UPLOAD_LIMITS.mimeTypes.includes(file.type)
+    : UPLOAD_LIMITS.extensions.includes(extension)
+  if (!typeOk) return 'wrongType'
+  if (file.size > UPLOAD_LIMITS.maxBytes) return 'tooBig'
+  return null
 }
 
 // Over the Images binding's limits (100 MP, or a side over 50,000px)

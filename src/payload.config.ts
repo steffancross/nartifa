@@ -11,12 +11,33 @@ import { Artworks } from './collections/Artworks'
 import { Media } from './collections/Media'
 import { Series } from './collections/Series'
 import { Users } from './collections/Users'
+import { UPLOAD_LIMITS } from './config/images'
+import { adminLabel } from './i18n/admin-labels'
 import { getCloudflareEnv } from './lib/cloudflare'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
 const isProduction = process.env.NODE_ENV === 'production'
+
+// Payload's own admin wording we change (Build Spec 07): delete confirms say it can't be undone
+const adminTranslations = (language: 'en' | 'ja') => {
+  const count = adminLabel('admin.delete.aboutToDeleteCount')[language]
+  const invalid = adminLabel('admin.errors.fieldsInvalid')[language]
+  return {
+    general: {
+      aboutToDelete: adminLabel('admin.delete.aboutToDelete')[language],
+      aboutToDeleteCount_one: count,
+      aboutToDeleteCount_many: count,
+      aboutToDeleteCount_other: count,
+    },
+    // The toast after a refused save, followed by the field names
+    error: {
+      followingFieldsInvalid_one: invalid,
+      followingFieldsInvalid_other: invalid,
+    },
+  }
+}
 
 const createLog =
   (level: string, fn: typeof console.log) => (objOrMsg: object | string, msg?: string) => {
@@ -46,27 +67,28 @@ export default buildConfig({
     user: Users.slug,
     // Dark for now (decided 2026-10-30); the design's light admin colors come later (Design Spec Tokens)
     theme: 'dark',
+    components: {
+      // /admin opens on the artworks table (Build Spec 07)
+      views: { dashboard: { Component: '@/admin/DashboardRedirect#DashboardRedirect' } },
+      // Files that can't be uploaded are stopped when picked or dropped (Build Spec 05)
+      providers: ['@/admin/UploadGuard#UploadGuard'],
+    },
     importMap: {
       baseDir: path.resolve(dirname),
     },
   },
   collections: [Artworks, Series, Media, Users],
-  // Content languages: artwork fields have ja/en values, Japanese first (Build Spec 02, 03)
-  localization: {
-    locales: [
-      { code: 'ja', label: '日本語' },
-      { code: 'en', label: 'English' },
-    ],
-    defaultLocale: 'ja',
-    fallback: true,
-  },
   // The admin's own interface language, switchable in account settings (Build Spec 07)
   i18n: {
     supportedLanguages: { en, ja },
+    // Payload's delete dialogs say deleted items can't be recovered. Text in ja.json / en.json
+    translations: { en: adminTranslations('en'), ja: adminTranslations('ja') },
   },
-  // Matches the Images binding's 20 MB input limit (Build Spec 05)
+  // Matches the Images binding's 20 MB input limit (Build Spec 05). The admin checks it in the
+  // browser before sending (src/admin/media/FileCheck.tsx): past this the server cuts the upload
+  // off mid-send, which the browser only reports as a network error
   upload: {
-    limits: { fileSize: 20_000_000 },
+    limits: { fileSize: UPLOAD_LIMITS.maxBytes },
   },
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',

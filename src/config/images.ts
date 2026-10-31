@@ -5,6 +5,8 @@
 export const IMAGE_SIZES = {
   // Exact squares: thumbnails, admin tables, review queue
   thumb: { width: 200, height: 200, fit: 'cover' },
+  // Whole image inside 400×400, never cropped: the admin's image previews (adminThumbnail)
+  preview: { width: 400, height: 400, fit: 'scale-down' },
   // Exact square: All Works grid
   card: { width: 600, height: 600, fit: 'cover' },
   // Natural shape, never upscaled: artwork / photo on phones
@@ -22,11 +24,11 @@ export type ImageSize = keyof typeof IMAGE_SIZES
 // WebP drops all metadata (EXIF, GPS) on output
 export const IMAGE_OUTPUT = { format: 'image/webp', quality: 85 } as const
 
-// Collections served through /img and the sizes each one gets. Every artwork image gets all six: an
-// image doesn't know at upload whether it will be a main or an extra image. globe-photos joins in
-// the globe phase with thumb, md, lg
+// Collections served through /img and the sizes each one gets. Every artwork image gets all seven:
+// an image doesn't know at upload whether it will be a main or an extra image. globe-photos joins
+// in the globe phase with thumb, md, lg
 export const IMAGE_COLLECTIONS = {
-  media: ['thumb', 'card', 'md', 'lg', 'xl', 'og'],
+  media: ['thumb', 'preview', 'card', 'md', 'lg', 'xl', 'og'],
 } as const satisfies Record<string, readonly ImageSize[]>
 
 export type ImageCollection = keyof typeof IMAGE_COLLECTIONS
@@ -37,6 +39,14 @@ export const ORIENTATION_SIZE = 'lg' satisfies ImageSize
 // The Images binding's input limits on Cloudflare (error 9413). The local runtime has none, so the
 // upload hook checks them itself
 export const IMAGE_LIMITS = { maxPixels: 100_000_000, maxSide: 50_000 }
+
+// What can be uploaded at all: the Images binding's 20 MB input limit and the formats it reads.
+// Checked in the browser before sending, and again on the server (src/lib/images.ts, fileProblem)
+export const UPLOAD_LIMITS = {
+  maxBytes: 20_000_000,
+  mimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
+  extensions: ['jpg', 'jpeg', 'png', 'webp'],
+}
 
 export const IMAGE_CACHE_CONTROL = {
   // ?v= changes whenever the image is replaced, so a year is safe

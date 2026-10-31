@@ -104,3 +104,5 @@ Plain light UI. Use the CMS defaults where they exist.
 | `status-live` | `#2E7D4F` |
 | `status-hidden` | `#8A8A84` |
 | `status-incomplete` | `#B5772A` |
+
+While the admin uses Payload's dark theme (Build Spec 07), the Delete button uses `#E5484D` with a light tint behind it: `danger` is too dark to read on the dark background. Back to `danger` with the light admin colors.

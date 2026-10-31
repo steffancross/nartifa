@@ -3,3 +3,204 @@
 .login__form a[href$='/forgot'] {
   display: none;
 }
+
+// Payload's ⋮ menu on an item's page (Create new, Duplicate, Delete): hidden everywhere. Payload
+// has no setting for its Create new; Delete is its own button instead (src/admin/DeleteButton.tsx)
+.doc-controls__popup {
+  display: none;
+}
+
+// Payload's image previews (lists, image pages, upload fields) show the whole image, not a crop to
+// fill the box: they use the uncropped "preview" size (Media adminThumbnail)
+.thumbnail img {
+  object-fit: contain;
+}
+
+// Our admin pieces (Build Spec 07). Status colors are the design's admin tokens (Design Spec Tokens,
+// Admin colors); the rest leans on Payload's own theme variables so it follows the dark theme
+:root {
+  --nartifa-status-live: #2e7d4f;
+  --nartifa-status-hidden: #8a8a84;
+  --nartifa-status-incomplete: #b5772a;
+  --nartifa-danger: #a33333;
+}
+
+// Filter buttons above a list (All / Live / Hidden / Incomplete; All images / Unused)
+.nartifa-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--base) / 2);
+  margin-bottom: var(--base);
+}
+
+.nartifa-filter {
+  padding: calc(var(--base) / 4) calc(var(--base) * 0.75);
+  border: 1px solid var(--theme-elevation-150);
+  border-radius: var(--style-radius-m);
+  background: transparent;
+  color: var(--theme-text);
+  font: inherit;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--theme-elevation-400);
+  }
+
+  &[aria-pressed='true'] {
+    background: var(--theme-text);
+    border-color: var(--theme-text);
+    color: var(--theme-bg);
+  }
+}
+
+// Table cells
+.nartifa-thumb {
+  display: block;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--style-radius-s);
+  background: var(--theme-elevation-100);
+  overflow: hidden;
+
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.nartifa-muted {
+  color: var(--theme-elevation-500);
+}
+
+.nartifa-status--live {
+  color: var(--nartifa-status-live);
+}
+
+.nartifa-status--hidden {
+  color: var(--nartifa-status-hidden);
+}
+
+.nartifa-status--incomplete {
+  color: var(--nartifa-status-incomplete);
+}
+
+.nartifa-actions {
+  padding: 0 calc(var(--base) / 2);
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.nartifa-danger {
+  color: var(--nartifa-danger);
+}
+
+// Delete next to Save on an item's page: after Save (it's rendered before it), red outline on a
+// light red tint. A brighter red than --nartifa-danger, which is too dark to read on the dark theme
+.btn.nartifa-delete {
+  --nartifa-delete: #e5484d;
+  order: 1;
+  margin: 0;
+  border: 1px solid var(--nartifa-delete);
+  box-shadow: none;
+  background: rgb(229 72 77 / 12%);
+  color: var(--nartifa-delete);
+
+  &:hover:not(:disabled),
+  &:focus-visible {
+    background: rgb(229 72 77 / 22%);
+    border-color: var(--nartifa-delete);
+    box-shadow: none;
+    color: var(--nartifa-delete);
+  }
+}
+
+// A work's image fields (src/admin/artworks/ImageField.tsx). The whole field takes dropped files
+.nartifa-image-field {
+  border-radius: var(--style-radius-m);
+  outline: 2px dashed transparent;
+  outline-offset: 4px;
+
+  &--dragging {
+    outline-color: var(--theme-elevation-400);
+  }
+}
+
+// Our Upload button, placed first in Payload's row of buttons inside its box
+.nartifa-image-field__upload {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--base) / 2);
+  order: -1;
+}
+
+// The Live switch in the artwork form's sidebar, "Show on the site", with the status note under it
+.nartifa-live {
+  margin-bottom: calc(var(--base) / 2);
+}
+
+.nartifa-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--base) / 2);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--theme-text);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--theme-text);
+    outline-offset: 4px;
+    border-radius: var(--style-radius-s);
+  }
+}
+
+.nartifa-switch__track {
+  position: relative;
+  flex-shrink: 0;
+  width: 40px;
+  height: 22px;
+  border-radius: 11px;
+  background: var(--theme-elevation-250);
+  transition: background 150ms;
+
+  [aria-checked='true'] > & {
+    background: var(--nartifa-status-live);
+  }
+}
+
+.nartifa-switch__thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 150ms;
+
+  [aria-checked='true'] & {
+    transform: translateX(18px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nartifa-switch__track,
+  .nartifa-switch__thumb {
+    transition: none;
+  }
+}
+
+.nartifa-note {
+  margin: 0 0 var(--base);
+  font-weight: 500;
+}

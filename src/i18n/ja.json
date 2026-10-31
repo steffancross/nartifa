@@ -54,6 +54,63 @@
     "images": {
       "tooLarge": "画像が大きすぎて処理できません（1億画素以上、または一辺が5万ピクセル以上）。小さめに書き出してからアップロードしてください。",
       "failed": "画像を処理できませんでした。JPGまたはPNGで書き出し直して、もう一度お試しください。"
+    },
+    "validation": {
+      "wholeYen": "円の金額を整数で入力してください（記号やカンマは不要です）。",
+      "year": "4桁の年を入力してください。"
+    },
+    "artworks": {
+      "untitled": "無題",
+      "mainImage": "メイン画像",
+      "live": "サイトに表示",
+      "status": {
+        "live": "公開中",
+        "hidden": "非公開",
+        "incomplete": "未完成"
+      },
+      "note": {
+        "live": "サイトに表示中",
+        "hidden": "サイトに表示していません",
+        "incomplete": "まだ表示できません。未入力：{fields}"
+      },
+      "filters": {
+        "all": "すべて"
+      },
+      "actions": {
+        "menu": "操作",
+        "edit": "編集",
+        "hide": "非公開にする",
+        "show": "公開する",
+        "delete": "削除",
+        "failed": "うまくいきませんでした。もう一度お試しください。"
+      }
+    },
+    "media": {
+      "filters": {
+        "all": "すべての画像",
+        "unused": "未使用"
+      }
+    },
+    "delete": {
+      "confirmOne": "「{title}」を削除しますか？削除したものは元に戻せません。",
+      "aboutToDelete": "{{label}} <1>{{title}}</1> を削除します。削除したものは元に戻せません。よろしいですか？",
+      "aboutToDeleteCount": "{{label}}を{{count}}件削除します。削除したものは元に戻せません。"
+    },
+    "errors": {
+      "fieldsInvalid": "入力または修正してください："
+    },
+    "upload": {
+      "wrongType": "アップロードできるのはJPG・PNG・WebPの画像だけです。iPhoneのHEIC写真などは、JPGに変換してからアップロードしてください。",
+      "tooBig": "ファイルが20MBを超えています。小さめに書き出してからアップロードしてください。",
+      "chooseOne": "画像をアップロード",
+      "chooseMany": "画像をアップロード",
+      "orDrop": "またはここにドラッグ",
+      "uploading": "アップロード中…（{done}/{total}）",
+      "failed": "アップロードできませんでした。もう一度お試しください。",
+      "or": "または"
     }
+  },
+  "artwork": {
+    "priceOnRequest": "応相談"
   }
 }

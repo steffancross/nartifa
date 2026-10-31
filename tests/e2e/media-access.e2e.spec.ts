@@ -52,8 +52,8 @@ test('media files and records need a login', async ({ playwright }) => {
     expect(card.headers()['cache-control']).toBe('public, max-age=31536000, immutable')
     expect((await anonymous.get(`/img/media/${doc.id}/nope`)).status()).toBe(404)
 
-    // The admin's thumbnails use the 200px size, not the original
-    expect(doc.thumbnailURL).toMatch(new RegExp(`^/img/media/${doc.id}/thumb\\?v=\\d+$`))
+    // The admin's previews use the uncropped 400px size, not the original
+    expect(doc.thumbnailURL).toMatch(new RegExp(`^/img/media/${doc.id}/preview\\?v=\\d+$`))
   } finally {
     await admin.delete(`/api/media/${doc.id}`, { headers: auth })
     await anonymous.dispose()

@@ -24,8 +24,7 @@ export async function login({
   await page.fill('#field-password', user.password)
   await page.click('button[type="submit"]')
 
-  await page.waitForURL(`${serverURL}/admin`)
-
-  const dashboardArtifact = page.locator('span[title="Dashboard"]')
-  await expect(dashboardArtifact).toBeVisible()
+  // /admin redirects to the artworks table (Build Spec 07)
+  await page.waitForURL(/\/admin\/collections\/artworks/)
+  await expect(page.locator('h1', { hasText: 'Artworks' })).toBeVisible()
 }

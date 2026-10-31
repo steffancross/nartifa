@@ -15,11 +15,15 @@ const complete = {
 }
 
 describe('computeStatus (Build Spec 02, Status rule)', () => {
-  it('an empty work is hidden and missing everything', () => {
-    expect(computeStatus({})).toEqual({ status: 'hidden', missing: [...REQUIRED_FIELDS] })
+  it('an empty work is incomplete and missing everything', () => {
+    expect(computeStatus({})).toEqual({ status: 'incomplete', missing: [...REQUIRED_FIELDS] })
   })
 
-  it('Live with gaps is incomplete and names the gaps', () => {
+  it('gaps make a work incomplete whether or not Live is on, and name the gaps', () => {
+    expect(computeStatus({ ...complete, live: false, smell: null })).toEqual({
+      status: 'incomplete',
+      missing: ['smell'],
+    })
     expect(computeStatus({ ...complete, live: true, smell: null, mainImage: undefined })).toEqual({
       status: 'incomplete',
       missing: ['smell', 'mainImage'],

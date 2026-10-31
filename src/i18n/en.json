@@ -54,6 +54,63 @@
     "images": {
       "tooLarge": "This image is too large to process (over 100 megapixels, or a side over 50,000 px). Export a smaller version and upload that.",
       "failed": "This image couldn't be processed. Export it again as JPG or PNG and try once more."
+    },
+    "validation": {
+      "wholeYen": "Enter a whole number of yen, without symbols or commas.",
+      "year": "Enter a 4-digit year."
+    },
+    "artworks": {
+      "untitled": "Untitled",
+      "mainImage": "Main image",
+      "live": "Show on the site",
+      "status": {
+        "live": "Live",
+        "hidden": "Hidden",
+        "incomplete": "Incomplete"
+      },
+      "note": {
+        "live": "On the site",
+        "hidden": "Not on the site",
+        "incomplete": "Can't be shown yet. Needs: {fields}"
+      },
+      "filters": {
+        "all": "All"
+      },
+      "actions": {
+        "menu": "Actions",
+        "edit": "Edit",
+        "hide": "Hide",
+        "show": "Show",
+        "delete": "Delete",
+        "failed": "That didn't work. Please try again."
+      }
+    },
+    "media": {
+      "filters": {
+        "all": "All images",
+        "unused": "Unused"
+      }
+    },
+    "delete": {
+      "confirmOne": "Delete “{title}”? Deleted items can't be recovered.",
+      "aboutToDelete": "You are about to delete the {{label}} <1>{{title}}</1>. Deleted items can't be recovered.",
+      "aboutToDeleteCount": "You are about to delete {{count}} {{label}}. Deleted items can't be recovered."
+    },
+    "errors": {
+      "fieldsInvalid": "Please fill in or fix:"
+    },
+    "upload": {
+      "wrongType": "Only JPG, PNG or WebP images can be uploaded. Convert other formats (such as iPhone HEIC photos) to JPG first.",
+      "tooBig": "This file is larger than 20 MB. Export a smaller version and upload that.",
+      "chooseOne": "Upload image",
+      "chooseMany": "Upload images",
+      "orDrop": "or drag files here",
+      "uploading": "Uploading {done} of {total}…",
+      "failed": "The upload didn't work. Please try again.",
+      "or": "or"
     }
+  },
+  "artwork": {
+    "priceOnRequest": "On request"
   }
 }

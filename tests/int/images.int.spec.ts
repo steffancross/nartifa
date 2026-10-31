@@ -101,7 +101,7 @@ describe('upload', () => {
 describe('delete', () => {
   it('removes the derived files and the original', async () => {
     const image = await upload('small.png', 'image/png')
-    expect(await derivedKeys(image.id)).toHaveLength(6)
+    expect(await derivedKeys(image.id)).toHaveLength(IMAGE_COLLECTIONS.media.length)
 
     await payload.delete({ collection: 'media', id: image.id, context })
     expect(await derivedKeys(image.id)).toEqual([])

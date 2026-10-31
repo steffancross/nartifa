@@ -17,3 +17,14 @@ export function adminLabel(path: string): { en: string; ja: string } {
   if (!jaText) throw new Error(`Missing Japanese i18n text for "${path}"`)
   return { en: read(en, path) ?? jaText, ja: jaText }
 }
+
+export type AdminLanguage = 'en' | 'ja'
+
+// The admin's interface language as Payload reports it (anything but Japanese → English)
+export const adminLanguage = (language: string | undefined): AdminLanguage => (language === 'ja' ? 'ja' : 'en')
+
+// One string in the admin's language, with {name} placeholders filled in
+export function adminText(path: string, language: string | undefined, vars: Record<string, string> = {}): string {
+  const text = adminLabel(path)[adminLanguage(language)]
+  return text.replace(/\{(\w+)\}/g, (match, name: string) => vars[name] ?? match)
+}

@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
+import { ADMIN_GROUP, ITEM_PAGE_COMPONENTS } from '@/config/admin'
 import { revalidateOnChange } from '@/hooks/revalidate'
 import { setSlug } from '@/hooks/series'
 import { CACHE_TAGS } from '@/lib/cache-tags'
@@ -16,10 +17,15 @@ export const Series: CollectionConfig = {
     plural: { en: 'Collections', ja: 'コレクション' },
   },
   admin: {
+    group: ADMIN_GROUP,
     useAsTitle: 'nameJa',
     defaultColumns: ['nameJa', 'nameEn', 'slug'],
     listSearchableFields: ['nameJa', 'nameEn'],
+    hideAPIURL: true,
+    components: ITEM_PAGE_COMPONENTS,
   },
+  // An item's page is just its form (src/config/admin.ts)
+  disableDuplicate: true,
   hooks: {
     beforeChange: [setSlug],
     ...revalidateOnChange(CACHE_TAGS.works),
@@ -45,6 +51,15 @@ export const Series: CollectionConfig = {
       index: true,
       label: { en: 'Slug', ja: 'スラッグ' },
       admin: { position: 'sidebar', readOnly: true },
+    },
+    {
+      // The works in this collection, listed on its page. Read from artworks.series, not stored
+      name: 'works',
+      type: 'join',
+      collection: 'artworks',
+      on: 'series',
+      label: { en: 'Works in this collection', ja: 'このコレクションの作品' },
+      admin: { allowCreate: false, defaultColumns: ['displayTitle', 'status'] },
     },
   ],
 }

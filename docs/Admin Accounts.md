@@ -28,7 +28,7 @@ That id is Steffan's account. At go-live, use the artist's account id; it must m
 
 ## Create an account
 
-**From the admin (when someone can already log in):** Users → Create New, enter the email and a password, save. Then send the person their password in a private message, and ask them to change it on their account page.
+**From the admin (when someone can already log in):** go to `/admin/collections/users` (Accounts isn't in the menu) → Create New, enter the email and a password, save. Then send the person their password in a private message, and ask them to change it on their account page.
 
 **From the command line (the first accounts, or when nobody can log in):**
 
@@ -45,7 +45,7 @@ It asks for the email and password (at least 12 characters) and creates the acco
 | Situation | What to do |
 | --- | --- |
 | You can log in and want a new password | Open your account (account icon in the admin, or `/admin/account`) → Change Password → save |
-| Someone forgot their password, and someone else can log in | The other person opens Users → that account → sets a new password → saves, then sends it privately |
+| Someone forgot their password, and someone else can log in | The other person opens `/admin/collections/users` → that account → sets a new password → saves, then sends it privately |
 | Nobody can log in, or the account is locked | Run `pnpm seed-admin:remote`, enter that account's email and a new password |
 
 `seed-admin` resets the password when the email already exists, and also clears a lockout from wrong passwords. It never creates a second account for the same email, and never touches other accounts.
@@ -54,7 +54,7 @@ The login page may still show a "Forgot password?" link until the admin tweaks a
 
 ## Remove an account
 
-Log in with another account, open Users → the account → Delete. Keep at least one account. If the last one is deleted, run `seed-admin:remote` to create one again.
+Log in with another account, open `/admin/collections/users` → the account → Delete. Keep at least one account. If the last one is deleted, run `seed-admin:remote` to create one again.
 
 ## First setup on a new Cloudflare account (build, and again at go-live)
 

@@ -5,10 +5,17 @@ Design spec 09 and 10. Built on Payload's admin; custom only where the stock adm
 ## General — Decided
 
 - `/admin` opens on the **artworks table** (redirect from Payload's dashboard).
-- Nav: Artworks · Review queue (with pending count) · Submissions · Collections. Hide `media`, `globe-photos` and `users` from the nav where possible.
+- Nav: Artworks · Review queue (with pending count) · Submissions · Collections · **Images**, under one "NARTIFA" heading (Payload's default heading is "Collections", which reads as the artist's collections). `globe-photos` and `users` (labelled Accounts) are hidden with `admin.group: false`, which keeps their pages working. **Images stays in the menu — Decided 2026-10-30:** it's the one place to delete images no work uses, with an **Unused** filter.
 - Admin colors from design spec Tokens (admin section), applied through Payload's admin CSS. **For now the admin is Payload's dark theme** (`admin.theme: 'dark'`, decided 2026-10-30); the light admin colors are applied later.
 - Every field label written in EN and JA. Payload's own interface text is available in Japanese; language switchable in account settings.
-- Delete confirmation text overridden to say the item **cannot be recovered**.
+- Delete confirmation text overridden to say the item **cannot be recovered**: Payload's `general:aboutToDelete` / `aboutToDeleteCount_*` through `i18n.translations`, text in `ja.json` / `en.json` (`admin.delete.*`). Applies to every collection.
+- The toast after a refused save says **"Please fill in or fix: Name (Japanese)"** / 「入力または修正してください：…」 instead of Payload's "The following field is invalid:" (`error:followingFieldsInvalid_*`, `admin.errors.fieldsInvalid`). Changed 2026-10-30 after the hand test.
+- **An item's page is just its form — Decided 2026-10-30 (hand test).** On artworks, collections and images: no Edit / API tabs (`hideAPIURL`, and the Edit tab's `condition` returns false: a tab bar of one), no Duplicate (`disableDuplicate`), and no ⋮ menu (hidden in `custom.scss`; Payload has no setting for its "Create new" item). **Delete** is its own button after Save (`beforeDocumentControls`, `src/admin/DeleteButton.tsx`, red outline): asks with the same "can't be recovered" text as the table, then goes back to the list. Shared setup in `src/config/admin.ts` (`ITEM_PAGE_COMPONENTS`). The ⋮ menu is hidden on the (hidden) Accounts pages too.
+- **Adding an image is just choosing the file — Decided 2026-10-30 (hand test).** Payload always adds an image through the image's own form (in a drawer, or its bulk upload with a Save button), showing empty "In use" / "used by" fields first; there's no setting to skip it (checked in the docs and GitHub). So:
+  - **On a work:** the main image and extra images fields (`src/admin/artworks/ImageField.tsx`) have our own **Upload image(s)** button inside Payload's box ("Upload image or Choose from existing", "or drag files here") and take dropped files anywhere on the field. Files upload straight to `/api/media` and land in the field; extra images take several at once. Payload's own "Create new" and drop are off (`allowCreate: false`). The button is placed into Payload's markup by its class names (`.upload__dropzoneContent__buttons`), so a Payload upgrade that renames them would hide it: the e2e test checks it.
+  - **Images → Create new:** the page shows only the file picker (In use and the "used by" lists appear once saved) and saves as soon as a file is chosen, then opens the saved image (`src/admin/media/FileCheck.tsx`; each file is sent once).
+  - **No Bulk upload** (`upload.bulkUpload: false`).
+  - Files that can't be uploaded are stopped when picked or dropped, with a message (05, upload checks).
 
 ## Stock vs custom
 
@@ -17,14 +24,14 @@ Design spec 09 and 10. Built on Payload's admin; custom only where the stock adm
 | 9a Login | Login screen; forgot-password off — Payload 3.92 always renders the link, so `custom.scss` hides it (`.login__form a[href$='/forgot']`); there's no email service, so the page behind it can't send anything anyway | — |
 | 9b Artworks table | List view, search, column picker, New button, delete confirm | Quick filter row; custom cells; `searchText` field so search covers both titles |
 | Row ⋯ menu | Bulk select + actions | Small custom cell (Edit · Hide/Show · Delete) |
-| 9c/9d Form | All fields, relationship "create new", drag reorder, unsaved-changes warning, Saving/Saved messages | Status hook; "Not live — missing: …" note |
+| 9c/9d Form | All fields, relationship "create new", drag reorder, unsaved-changes warning, Saving/Saved messages | Status hook; "Show on the site" switch with the status note; direct image upload; Delete button |
 | 10a Review queue | — | **Custom admin view** |
 | 10b Submissions table | List, search, column picker | Quick filter row; Rejected hidden by default; Restore |
 | 10c Edit upload | Edit view, status, comment, delete | City picker field; coordinates read-only |
 
 ## Artworks table (9b)
 
-**Quick filter row** above the table: All / Live / Hidden / Incomplete — buttons, not Payload's query builder.
+**Quick filter row** above the table: All / Live / Hidden / Incomplete — buttons, not Payload's query builder (`beforeListTable`; they set the list's `where`, so the URL keeps the filter).
 
 **Columns** (custom cells):
 
@@ -33,30 +40,42 @@ Design spec 09 and 10. Built on Payload's admin; custom only where the stock adm
 | Thumbnail | `thumb` of `mainImage`, shown at 40×40 |
 | Title | JA, else EN |
 | Price | "¥22,000" / "On request" |
-| Status | Live / Hidden / **Incomplete: needs Smell, Feeling** (from `missing`), in the status colors |
+| Status | Live / Hidden / Incomplete, in the status colors. What's missing shows only on the work's page (changed 2026-10-30, hand test) |
 | Updated | Relative ("3 days ago") |
-| ⋯ | Edit · Hide/Show · Delete |
+| ⋯ | Edit · Hide/Show · Delete. Show is greyed out on an incomplete work, which can't go live |
 
-**Search: title in both languages.** Payload's list search only looks at the admin's current language for localized fields. So:
-- `searchText`: a hidden, read-only, **non-localized** text field on `artworks`. The `beforeChange` hook fills it with the Japanese and English titles, lower-cased: it reads the other language's title with `findByID({ locale: 'all' })` and merges the one being saved (`src/hooks/artworks.ts`, `src/lib/search-text.ts`).
-- That lookup is made **without** passing the save's `req`: a local API call with a `locale` overwrites `req.locale`, and the save would then store its title under `all` instead of the admin's language (caught by `tests/int/hooks.int.spec.ts`). Applies to any hook that reads in another locale.
-- `admin.listSearchableFields: ['searchText']`. The stock search box then finds a work by either title, whatever language the admin is in.
+**Search: title in both languages.** Payload's search box looks in one field. So:
+- `searchText`: a hidden, read-only text field on `artworks`. The `beforeChange` hook fills it with `titleJa` and `titleEn`, lower-cased (`src/hooks/artworks.ts`, `src/lib/search-text.ts`).
+- `admin.listSearchableFields: ['searchText']`. The stock search box then finds a work by either title.
+- (Before the text pairs, titles were Payload-localized and the hook had to look up the other language. Lesson kept for any future localized field: a local API call with a `locale` passed the save's `req` overwrites `req.locale`.)
 
-Empty state: "No artworks yet" + New artwork.
+Empty state: Payload's stock "No Artworks found" + Create new — close enough to the design, kept.
 
-## Artwork form (9c / 9d) — Proposed: stock layout first
+**In the repo (2026-10-30):** components in `src/admin/` (`DashboardRedirect`, `DeleteButton`, `UploadGuard`, `artworks/StatusFilter`, `ThumbnailCell`, `TitleCell`, `PriceCell`, `StatusCell`, `UpdatedCell`, `ActionsCell`, `LiveSwitch`, `StatusNote`, `ImageField`, `media/UnusedFilter`, `media/FileCheck`), pure text helpers in `src/lib/admin-format.ts`, styles in `src/app/(payload)/custom.scss` (status colors from the design's admin tokens). Notes:
+- The list loads works at depth 0, so the thumbnail cell builds `/img/media/{id}/thumb` from the id, with the **work's** `updatedAt` as `?v=`. A replaced image file shows its old thumbnail in that browser until the work is saved again. Admin only.
+- The Updated column is Payload's own `updatedAt`, declared on the collection only to give it the relative-date cell (no schema change).
+- ⋯ Hide/Show and Delete call the REST API (`PATCH live`, `DELETE`) and refresh the table; delete asks with Payload's confirmation modal.
+- Any column picked in the column picker still works; the ⋯ column is a `ui` field (no data).
+- **Images → Unused** filters on `media.inUse` (02). A filter value of boolean `false` is dropped when Payload writes the filter into the URL, so the button sends `'false'` as text.
+- e2e: `tests/e2e/admin.e2e.spec.ts`, including a check that no admin page throws an uncaught error.
 
-Payload's layout (main column + sidebar), styled with Payload's layout fields (rows, widths, collapsible sections) and the admin stylesheet:
+## Artwork form (9c / 9d) — stock layout, built 2026-10-30
 
-- **Sidebar:** Live toggle · status note ("Not live — missing: Smell, Feeling") · Collections.
+Payload's layout (main column + sidebar), with Payload's layout fields (rows, widths, collapsible sections — layout only, no data):
+
+- **Sidebar:** Live switch · status note · Collections.
+  - **Live** is a switch labelled **"Show on the site / サイトに表示"** (`src/admin/artworks/LiveSwitch.tsx`). It's greyed out while anything required is missing, and turns itself off if a required field is emptied on a live work (02, Status rule; changed 2026-10-30 after the hand test, when Live could be ticked on an unfinished work).
+  - The note under it is the `status` field's custom form component, worked out **live from the form** with the same rule as the save (`computeStatus`): "On the site" / "Not on the site" / "Can't be shown yet. Needs: Smell, Main image".
 - **Main column, in sections:**
-  1. Images — main image, extra images (drag to reorder)
-  2. Matching — six selects (labels and option words from i18n, same as the quiz)
-  3. Content — Title EN/JA, Description EN/JA, Price, Size, Materials EN/JA, Medium EN/JA, Year
+  1. Images — main image, extra images (drag to reorder). Uploading goes straight into the field (General, above)
+  2. Matching — six selects in two rows of three (labels and option words from i18n, same as the quiz)
+  3. Content — Title JA · Title EN, Description JA · EN (side by side, 02 text pairs), then Price · Size · Year in one row, Materials JA · EN, Medium JA · EN
 
-Build this form early and judge it with real fields. If it doesn't look good, switch to a custom edit view matching 9c. That is a UI-only change; data and hooks stay the same.
+Judge it by hand. If it doesn't look good, switch to a custom edit view matching 9c — UI only; data and hooks stay the same.
 
-Validation (design spec 09): price whole number; year 4 digits; save always allowed — missing tags or image only change status.
+Validation (design spec 09): price whole yen, 0 or more; year 4 digits (`src/lib/validation.ts`, messages in the admin's language); save always allowed — missing tags or image only make the work incomplete (and Live off).
+
+**Collections page:** "Works in this collection" lists the works in it (`series.works`, a join field, 02).
 
 ## Review queue (10a) — custom view, Decided
 

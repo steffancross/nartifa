@@ -76,7 +76,15 @@ export interface Config {
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
   };
-  collectionsJoins: {};
+  collectionsJoins: {
+    series: {
+      works: 'artworks';
+    };
+    media: {
+      usedAsMain: 'artworks';
+      usedAsExtra: 'artworks';
+    };
+  };
   collectionsSelect: {
     artworks: ArtworksSelect<false> | ArtworksSelect<true>;
     series: SeriesSelect<false> | SeriesSelect<true>;
@@ -90,10 +98,10 @@ export interface Config {
   db: {
     defaultIDType: number;
   };
-  fallbackLocale: ('false' | 'none' | 'null') | false | null | ('ja' | 'en') | ('ja' | 'en')[];
+  fallbackLocale: null;
   globals: {};
   globalsSelect: {};
-  locale: 'ja' | 'en';
+  locale: null;
   widgets: {
     collections: CollectionsWidget;
   };
@@ -130,23 +138,45 @@ export interface Artwork {
   live?: boolean | null;
   status?: ('live' | 'hidden' | 'incomplete') | null;
   missing?: string[] | null;
+  series?: (number | Series)[] | null;
+  mainImage?: (number | null) | Media;
+  extraImages?: (number | Media)[] | null;
   sight?: ('a' | 'b') | null;
   smell?: ('a' | 'b') | null;
   taste?: ('a' | 'b') | null;
   touch?: ('a' | 'b') | null;
   hearing?: ('a' | 'b') | null;
   feeling?: ('joy' | 'anger' | 'sorrow' | 'delight') | null;
-  mainImage?: (number | null) | Media;
-  extraImages?: (number | Media)[] | null;
-  title?: string | null;
-  description?: string | null;
+  titleJa?: string | null;
+  titleEn?: string | null;
+  descriptionJa?: string | null;
+  descriptionEn?: string | null;
   price?: number | null;
   size?: string | null;
-  materials?: string | null;
-  medium?: string | null;
   year?: number | null;
-  series?: (number | Series)[] | null;
+  materialsJa?: string | null;
+  materialsEn?: string | null;
+  mediumJa?: string | null;
+  mediumEn?: string | null;
+  displayTitle?: string | null;
   searchText?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "series".
+ */
+export interface Series {
+  id: number;
+  nameJa: string;
+  nameEn: string;
+  slug?: string | null;
+  works?: {
+    docs?: (number | Artwork)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -156,6 +186,17 @@ export interface Artwork {
  */
 export interface Media {
   id: number;
+  inUse?: boolean | null;
+  usedAsMain?: {
+    docs?: (number | Artwork)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  usedAsExtra?: {
+    docs?: (number | Artwork)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
   prefix?: string | null;
   _objectKey?: string | null;
   updatedAt: string;
@@ -167,18 +208,6 @@ export interface Media {
   filesize?: number | null;
   width?: number | null;
   height?: number | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "series".
- */
-export interface Series {
-  id: number;
-  nameJa: string;
-  nameEn: string;
-  slug?: string | null;
-  updatedAt: string;
-  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -296,22 +325,27 @@ export interface ArtworksSelect<T extends boolean = true> {
   live?: T;
   status?: T;
   missing?: T;
+  series?: T;
+  mainImage?: T;
+  extraImages?: T;
   sight?: T;
   smell?: T;
   taste?: T;
   touch?: T;
   hearing?: T;
   feeling?: T;
-  mainImage?: T;
-  extraImages?: T;
-  title?: T;
-  description?: T;
+  titleJa?: T;
+  titleEn?: T;
+  descriptionJa?: T;
+  descriptionEn?: T;
   price?: T;
   size?: T;
-  materials?: T;
-  medium?: T;
   year?: T;
-  series?: T;
+  materialsJa?: T;
+  materialsEn?: T;
+  mediumJa?: T;
+  mediumEn?: T;
+  displayTitle?: T;
   searchText?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -324,6 +358,7 @@ export interface SeriesSelect<T extends boolean = true> {
   nameJa?: T;
   nameEn?: T;
   slug?: T;
+  works?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -332,6 +367,9 @@ export interface SeriesSelect<T extends boolean = true> {
  * via the `definition` "media_select".
  */
 export interface MediaSelect<T extends boolean = true> {
+  inUse?: T;
+  usedAsMain?: T;
+  usedAsExtra?: T;
   prefix?: T;
   _objectKey?: T;
   updatedAt?: T;
